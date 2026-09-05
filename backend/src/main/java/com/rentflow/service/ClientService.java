@@ -1,5 +1,6 @@
 package com.rentflow.service;
 
+import com.rentflow.dto.ClientCheckResultDto;
 import com.rentflow.dto.ClientDto;
 
 import java.util.List;
@@ -11,6 +12,7 @@ public interface ClientService {
     ClientDto createClient(ClientDto clientDto);
     ClientDto updateClient(Long id, ClientDto updatedDto);
     void deleteClient(Long id);
+    ClientCheckResultDto checkCin(String cin, String ice);
     ClientDto toggleBlacklist(Long id, Map<String, String> body);
     List<ClientDto> getBlacklistedClients();
 }

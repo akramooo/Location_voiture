@@ -126,8 +126,19 @@
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group">
-              <label class="form-label">CIN / N° Passeport <span style="color: #ef4444;">* (Unique)</span></label>
-              <input type="text" class="form-control" [(ngModel)]="newClient.cinPassport" name="cinPassport" required placeholder="ex: BE897654" style="text-transform: uppercase;">
+              <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>CIN / N° Passeport <span style="color: #ef4444;">* (Unique)</span></span>
+                <span *ngIf="isCheckingCin" style="font-size: 0.72rem; color: #60a5fa;">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Vérification réseau...
+                </span>
+              </label>
+              <div style="position: relative;">
+                <input type="text" class="form-control" [(ngModel)]="newClient.cinPassport" (ngModelChange)="onCinInput()" name="cinPassport" required placeholder="ex: BE897654" style="text-transform: uppercase; padding-right: 34px;">
+                <i *ngIf="isCheckingCin" class="fa-solid fa-spinner fa-spin" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: #3b82f6;"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult?.existsInCurrentTenant" class="fa-solid fa-circle-xmark" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #ef4444;"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.isMultiBlacklisted" class="fa-solid fa-triangle-exclamation" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #f59e0b;"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && !cinCheckResult.isMultiBlacklisted && (newClient.cinPassport?.length || 0) >= 3" class="fa-solid fa-circle-check" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #10b981;"></i>
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label">N° Permis de Conduire</label>
@@ -145,8 +156,18 @@
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group">
-              <label class="form-label">N° ICE Entreprise <span style="color: #ef4444;">* (Unique)</span></label>
-              <input type="text" class="form-control" [(ngModel)]="newClient.iceNumber" name="iceNumber" required placeholder="ex: 002345678000045">
+              <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>N° ICE Entreprise <span style="color: #ef4444;">* (Unique)</span></span>
+                <span *ngIf="isCheckingCin" style="font-size: 0.72rem; color: #60a5fa;">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Vérification...
+                </span>
+              </label>
+              <div style="position: relative;">
+                <input type="text" class="form-control" [(ngModel)]="newClient.iceNumber" (ngModelChange)="onCinInput()" name="iceNumber" required placeholder="ex: 002345678000045" style="padding-right: 34px;">
+                <i *ngIf="isCheckingCin" class="fa-solid fa-spinner fa-spin" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: #3b82f6;"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult?.existsInCurrentTenant" class="fa-solid fa-circle-xmark" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #ef4444;"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.isMultiBlacklisted" class="fa-solid fa-triangle-exclamation" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #f59e0b;"></i>
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label">Conducteur Désigné / Mandataire</label>
@@ -154,6 +175,62 @@
             </div>
           </div>
         </ng-container>
+
+        <!-- Dynamic Verification Feedback Banners -->
+        <!-- 1. Duplicate in current agency -->
+        <div *ngIf="!isEditMode && cinCheckResult?.existsInCurrentTenant" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px; color: #f87171; font-size: 0.84rem;">
+            <i class="fa-solid fa-circle-xmark" style="font-size: 1.25rem;"></i>
+            <div>
+              <strong>Client déjà enregistré :</strong> Ce client existe déjà dans votre base sous le nom de <strong>{{ cinCheckResult?.existingClientName }}</strong>.
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-xs" style="color: #60a5fa; border-color: rgba(59, 130, 246, 0.4); white-space: nowrap;" (click)="editExistingClientFromCheck(cinCheckResult?.existingClientId!)">
+            <i class="fa-solid fa-pen-to-square"></i> Modifier sa fiche
+          </button>
+        </div>
+
+        <!-- 2. Multi-blacklisted across SaaS network (>= 2 times) -->
+        <div *ngIf="!isEditMode && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.isMultiBlacklisted" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px;">
+            <div style="width: 34px; height: 34px; min-width: 34px; border-radius: 8px; background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center; color: #ef4444; font-size: 1.1rem;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.88rem; font-weight: 800; color: #f87171; letter-spacing: 0.3px;">
+                🚨 ALERTE ANTI-FRAUDE : CLIENT BLOQUÉ {{ cinCheckResult.globalBlacklistCount }} FOIS DANS LE RÉSEAU
+              </div>
+              <p style="font-size: 0.82rem; color: #cbd5e1; margin: 4px 0 6px 0; line-height: 1.4;">
+                Ce client a déjà fait l'objet de <strong>{{ cinCheckResult.globalBlacklistCount }} signalements de blocage</strong> par d'autres agences de location partenaires.
+              </p>
+              <div *ngIf="cinCheckResult.blacklistReasons && cinCheckResult.blacklistReasons.length > 0" style="font-size: 0.78rem; color: #94a3b8; background: rgba(0, 0, 0, 0.35); padding: 6px 10px; border-radius: 6px; margin-bottom: 8px;">
+                <strong>Motifs signalés :</strong> {{ cinCheckResult.blacklistReasons.join(' • ') }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Mandatory confirmation checkbox for High Risk -->
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(15, 23, 42, 0.8); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.35);">
+            <input type="checkbox" [(ngModel)]="acceptHighRiskConsent" name="acceptHighRiskConsent" style="width: 18px; height: 18px; accent-color: #ef4444; cursor: pointer;">
+            <span style="font-size: 0.82rem; font-weight: 700; color: #fecaca;">
+              J'accepte d'ajouter ce client sous la responsabilité de mon agence (Score initial fixé à 10/100)
+            </span>
+          </label>
+        </div>
+
+        <!-- 3. Single blacklist warning (1 time) -->
+        <div *ngIf="!isEditMode && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.globalBlacklistCount === 1" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: #fbbf24; font-size: 0.82rem;">
+          <i class="fa-solid fa-circle-exclamation" style="font-size: 1.15rem;"></i>
+          <div>
+            <strong>Attention :</strong> Ce client possède 1 antécédent de blocage dans une autre agence (Score de confiance réduit à 40/100).
+          </div>
+        </div>
+
+        <!-- 4. Clean verified client badge -->
+        <div *ngIf="!isEditMode && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.globalBlacklistCount === 0 && (newClient.cinPassport?.length || 0) >= 3" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #34d399; font-size: 0.8rem;">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>Identifiant vérifié : Nouveau client (0 antécédent négatif dans le réseau SaaS - Score 95/100).</span>
+        </div>
 
         <!-- Common Contact Fields -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -169,7 +246,7 @@
 
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
           <button type="button" class="btn btn-secondary" [disabled]="isSubmitting" (click)="closeModal()">Annuler</button>
-          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || isCheckingCin || (!isEditMode && cinCheckResult?.existsInCurrentTenant) || (!isEditMode && cinCheckResult?.isMultiBlacklisted && !acceptHighRiskConsent)">
             <i class="fa-solid fa-spinner fa-spin" *ngIf="isSubmitting"></i>
             <i class="fa-solid fa-check" *ngIf="!isSubmitting"></i>
             <span>{{ isSubmitting ? (isEditMode ? 'Modification en cours...' : 'Enregistrement en cours...') : (isEditMode ? 'Enregistrer les modifications' : 'Créer Fiche Client') }}</span>

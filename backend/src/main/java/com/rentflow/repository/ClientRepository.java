@@ -11,4 +11,8 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
     Optional<Client> findByTenantIdAndCinPassport(Long tenantId, String cinPassport);
     Optional<Client> findByTenantIdAndIceNumber(Long tenantId, String iceNumber);
     List<Client> findByTenantIdAndBlacklistedTrue(Long tenantId);
+
+    // Global Anti-Fraud Network Queries (Across all tenants)
+    List<Client> findByCinPassportIgnoreCaseAndBlacklistedTrue(String cinPassport);
+    List<Client> findByIceNumberIgnoreCaseAndBlacklistedTrue(String iceNumber);
 }

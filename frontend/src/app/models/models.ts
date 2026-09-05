@@ -37,6 +37,18 @@ export interface Client {
   blacklistReason?: string;
 }
 
+export interface ClientCheckResult {
+  cin?: string;
+  existsInCurrentTenant: boolean;
+  existingClientName?: string;
+  existingClientId?: number;
+  globalBlacklistCount: number;
+  isMultiBlacklisted: boolean;
+  blacklistReasons: string[];
+  suggestedRiskScore?: number;
+  warningMessage?: string;
+}
+
 export interface Reservation {
   id?: number;
   tenantId?: number;

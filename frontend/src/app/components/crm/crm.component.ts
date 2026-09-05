@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, of, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
-import { Client } from '../../models/models';
+import { Client, ClientCheckResult } from '../../models/models';
 
 @Component({
   selector: 'app-crm',
@@ -12,13 +14,20 @@ import { Client } from '../../models/models';
   templateUrl: './crm.component.html',
   styleUrls: ['./crm.component.css']
 })
-export class CrmComponent implements OnInit {
+export class CrmComponent implements OnInit, OnDestroy {
   clients: Client[] = [];
   searchTerm = '';
   isModalOpen = false;
   isSubmitting = false;
   isEditMode = false;
   editingClientId: number | null = null;
+
+  // Dynamic CIN Anti-Fraud Verification
+  cinCheckResult: ClientCheckResult | null = null;
+  isCheckingCin = false;
+  acceptHighRiskConsent = false;
+  private checkCinSubject = new Subject<{ cin?: string, ice?: string }>();
+  private checkCinSub?: Subscription;
 
   isDeleteModalOpen = false;
   isDeleting = false;
@@ -46,6 +55,57 @@ export class CrmComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadClients();
+    this.setupDynamicCinCheck();
+  }
+
+  ngOnDestroy(): void {
+    if (this.checkCinSub) {
+      this.checkCinSub.unsubscribe();
+    }
+  }
+
+  private setupDynamicCinCheck(): void {
+    this.checkCinSub = this.checkCinSubject.pipe(
+      debounceTime(350),
+      distinctUntilChanged((prev, curr) => prev.cin === curr.cin && prev.ice === curr.ice),
+      switchMap(query => {
+        const qCin = (query.cin || '').trim();
+        const qIce = (query.ice || '').trim();
+
+        if ((!qCin || qCin.length < 3) && (!qIce || qIce.length < 3)) {
+          this.cinCheckResult = null;
+          this.isCheckingCin = false;
+          return of(null);
+        }
+
+        this.isCheckingCin = true;
+        let params = '';
+        if (qCin) params += `cin=${encodeURIComponent(qCin)}`;
+        if (qIce) params += `${params ? '&' : ''}ice=${encodeURIComponent(qIce)}`;
+
+        return this.apiService.get<ClientCheckResult>(`/clients/check-cin?${params}`).pipe(
+          catchError(() => {
+            this.isCheckingCin = false;
+            return of(null);
+          })
+        );
+      })
+    ).subscribe(result => {
+      this.isCheckingCin = false;
+      this.cinCheckResult = result;
+      if (result && result.suggestedRiskScore !== undefined) {
+        this.newClient.riskScore = result.suggestedRiskScore;
+      }
+    });
+  }
+
+  onCinInput(): void {
+    if (this.isEditMode) return;
+    this.acceptHighRiskConsent = false;
+    this.checkCinSubject.next({
+      cin: this.newClient.cinPassport,
+      ice: this.newClient.iceNumber
+    });
   }
 
   loadClients(): void {
@@ -73,6 +133,9 @@ export class CrmComponent implements OnInit {
   openModal(): void {
     this.isEditMode = false;
     this.editingClientId = null;
+    this.cinCheckResult = null;
+    this.isCheckingCin = false;
+    this.acceptHighRiskConsent = false;
     this.newClient = {
       clientType: 'PARTICULIER',
       firstName: '',
@@ -94,6 +157,9 @@ export class CrmComponent implements OnInit {
   openEditModal(client: Client): void {
     this.isEditMode = true;
     this.editingClientId = client.id || null;
+    this.cinCheckResult = null;
+    this.isCheckingCin = false;
+    this.acceptHighRiskConsent = true;
     this.newClient = {
       ...client,
       clientType: client.clientType || 'PARTICULIER',
@@ -111,6 +177,13 @@ export class CrmComponent implements OnInit {
     };
     this.isSubmitting = false;
     this.isModalOpen = true;
+  }
+
+  editExistingClientFromCheck(clientId: number): void {
+    const existing = this.clients.find(c => c.id === clientId);
+    if (existing) {
+      this.openEditModal(existing);
+    }
   }
 
   closeModal(): void {
@@ -144,6 +217,17 @@ export class CrmComponent implements OnInit {
       }
       if (!this.newClient.iceNumber?.trim() && !this.newClient.cinPassport?.trim()) {
         this.toastService.warning('Le numéro ICE de l\'entreprise est obligatoire', 'Validation');
+        return;
+      }
+    }
+
+    if (!this.isEditMode) {
+      if (this.cinCheckResult?.existsInCurrentTenant) {
+        this.toastService.warning('Ce client figure déjà dans votre agence. Impossible de créer un doublon.', 'Doublon');
+        return;
+      }
+      if (this.cinCheckResult?.isMultiBlacklisted && !this.acceptHighRiskConsent) {
+        this.toastService.warning('Veuillez confirmer votre acceptation pour enregistrer ce client multi-bloqué.', 'Validation Requise');
         return;
       }
     }

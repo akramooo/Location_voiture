@@ -2,6 +2,7 @@ package com.rentflow.service.impl;
 
 import com.rentflow.domain.Client;
 import com.rentflow.domain.Tenant;
+import com.rentflow.dto.ClientCheckResultDto;
 import com.rentflow.dto.ClientDto;
 import com.rentflow.mapper.ClientMapper;
 import com.rentflow.repository.ClientRepository;
@@ -49,6 +50,83 @@ public class ClientServiceImpl implements ClientService {
         }
 
         return clientMapper.toDto(clientOpt.get());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ClientCheckResultDto checkCin(String cin, String ice) {
+        Long tenantId = TenantContext.getCurrentTenant();
+
+        String normalizedCin = cin != null ? cin.trim().toUpperCase() : "";
+        String normalizedIce = ice != null ? ice.trim() : "";
+
+        ClientCheckResultDto.ClientCheckResultDtoBuilder builder = ClientCheckResultDto.builder()
+                .cin(normalizedCin)
+                .existsInCurrentTenant(false)
+                .globalBlacklistCount(0)
+                .isMultiBlacklisted(false)
+                .blacklistReasons(List.of())
+                .suggestedRiskScore(95);
+
+        // 1. Vérification dans l'agence actuelle
+        if (!normalizedCin.isEmpty()) {
+            Optional<Client> localOpt = clientRepository.findByTenantIdAndCinPassport(tenantId, normalizedCin);
+            if (localOpt.isPresent()) {
+                Client local = localOpt.get();
+                String fullName = local.getClientType() != null && local.getClientType().equalsIgnoreCase("ENTREPRISE") && local.getCompanyName() != null
+                        ? local.getCompanyName()
+                        : ((local.getFirstName() != null ? local.getFirstName() : "") + " " + (local.getLastName() != null ? local.getLastName() : "")).trim();
+                return builder
+                        .existsInCurrentTenant(true)
+                        .existingClientName(fullName)
+                        .existingClientId(local.getId())
+                        .warningMessage("Ce client figure déjà dans votre base de données (" + fullName + ").")
+                        .build();
+            }
+        } else if (!normalizedIce.isEmpty()) {
+            Optional<Client> localOpt = clientRepository.findByTenantIdAndIceNumber(tenantId, normalizedIce);
+            if (localOpt.isPresent()) {
+                Client local = localOpt.get();
+                String name = local.getCompanyName() != null ? local.getCompanyName() : local.getFirstName();
+                return builder
+                        .existsInCurrentTenant(true)
+                        .existingClientName(name)
+                        .existingClientId(local.getId())
+                        .warningMessage("Une entreprise avec cet ICE figure déjà dans votre base de données (" + name + ").")
+                        .build();
+            }
+        }
+
+        // 2. Vérification réseau SaaS Anti-Fraude (Multi-Blacklist)
+        List<Client> globalBlacklisted = List.of();
+        if (!normalizedCin.isEmpty()) {
+            globalBlacklisted = clientRepository.findByCinPassportIgnoreCaseAndBlacklistedTrue(normalizedCin);
+        } else if (!normalizedIce.isEmpty()) {
+            globalBlacklisted = clientRepository.findByIceNumberIgnoreCaseAndBlacklistedTrue(normalizedIce);
+        }
+
+        int count = globalBlacklisted.size();
+        List<String> reasons = globalBlacklisted.stream()
+                .map(Client::getBlacklistReason)
+                .filter(r -> r != null && !r.trim().isEmpty())
+                .distinct()
+                .toList();
+
+        if (count >= 2) {
+            builder.globalBlacklistCount(count)
+                    .isMultiBlacklisted(true)
+                    .blacklistReasons(reasons)
+                    .suggestedRiskScore(10)
+                    .warningMessage("ALERTE CRITIQUE : Ce client a été bloqué " + count + " fois par d'autres agences du réseau.");
+        } else if (count == 1) {
+            builder.globalBlacklistCount(count)
+                    .isMultiBlacklisted(false)
+                    .blacklistReasons(reasons)
+                    .suggestedRiskScore(40)
+                    .warningMessage("ATTENTION : Ce client a 1 signalement de blacklist dans une autre agence.");
+        }
+
+        return builder.build();
     }
 
     @Override

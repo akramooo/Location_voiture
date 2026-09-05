@@ -22,6 +22,13 @@ public class ClientController {
         return ResponseEntity.ok(clientService.getClients());
     }
 
+    @GetMapping("/check-cin")
+    public ResponseEntity<?> checkCin(
+            @RequestParam(required = false) String cin,
+            @RequestParam(required = false) String ice) {
+        return ResponseEntity.ok(clientService.checkCin(cin, ice));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getClientById(@PathVariable Long id) {
         try {
