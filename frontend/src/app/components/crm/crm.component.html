@@ -133,7 +133,7 @@
                 </span>
               </label>
               <div style="position: relative;">
-                <input type="text" class="form-control" [(ngModel)]="newClient.cinPassport" (ngModelChange)="onCinInput()" name="cinPassport" required placeholder="ex: BE897654" style="text-transform: uppercase; padding-right: 34px;">
+                <input type="text" class="form-control" [(ngModel)]="newClient.cinPassport" (ngModelChange)="onCinInput()" (blur)="onCinInput()" name="cinPassport" required placeholder="ex: BE897654" style="text-transform: uppercase; padding-right: 34px;">
                 <i *ngIf="isCheckingCin" class="fa-solid fa-spinner fa-spin" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: #3b82f6;"></i>
                 <i *ngIf="!isCheckingCin && cinCheckResult?.existsInCurrentTenant" class="fa-solid fa-circle-xmark" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #ef4444;"></i>
                 <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.isMultiBlacklisted" class="fa-solid fa-triangle-exclamation" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #f59e0b;"></i>
@@ -163,7 +163,7 @@
                 </span>
               </label>
               <div style="position: relative;">
-                <input type="text" class="form-control" [(ngModel)]="newClient.iceNumber" (ngModelChange)="onCinInput()" name="iceNumber" required placeholder="ex: 002345678000045" style="padding-right: 34px;">
+                <input type="text" class="form-control" [(ngModel)]="newClient.iceNumber" (ngModelChange)="onCinInput()" (blur)="onCinInput()" name="iceNumber" required placeholder="ex: 002345678000045" style="padding-right: 34px;">
                 <i *ngIf="isCheckingCin" class="fa-solid fa-spinner fa-spin" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: #3b82f6;"></i>
                 <i *ngIf="!isCheckingCin && cinCheckResult?.existsInCurrentTenant" class="fa-solid fa-circle-xmark" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #ef4444;"></i>
                 <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.isMultiBlacklisted" class="fa-solid fa-triangle-exclamation" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #f59e0b;"></i>

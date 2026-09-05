@@ -66,8 +66,7 @@ export class CrmComponent implements OnInit, OnDestroy {
 
   private setupDynamicCinCheck(): void {
     this.checkCinSub = this.checkCinSubject.pipe(
-      debounceTime(350),
-      distinctUntilChanged((prev, curr) => prev.cin === curr.cin && prev.ice === curr.ice),
+      debounceTime(300),
       switchMap(query => {
         const qCin = (query.cin || '').trim();
         const qIce = (query.ice || '').trim();
