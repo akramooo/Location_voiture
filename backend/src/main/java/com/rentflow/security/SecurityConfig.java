@@ -1,14 +1,18 @@
 package com.rentflow.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,8 +48,8 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .headers(headers -> headers.frameOptions(frame -> frame.disable())) // Pour la console H2
+            .csrf(AbstractHttpConfigurer::disable)
+            .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -64,19 +68,19 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Autoriser toutes les origines (Angular localhost:4200, 3000, multi-tenant subdomains, Railway, etc.)
+        // Autoriser toutes les origines
         configuration.setAllowedOriginPatterns(Collections.singletonList("*"));
         
         // Autoriser toutes les méthodes HTTP
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         
-        // Autoriser tous les en-têtes HTTP (Authorization, Content-Type, X-Tenant-ID, Accept, etc.)
+        // Autoriser tous les en-têtes HTTP
         configuration.setAllowedHeaders(Arrays.asList("*"));
         
-        // Exposer les en-têtes nécessaires pour le client Angular
+        // Exposer les en-têtes nécessaires
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition", "X-Tenant-ID", "Link", "X-Total-Count"));
         
-        // Autoriser les credentials (Bearer tokens, cookies, auth headers)
+        // Autoriser les credentials
         configuration.setAllowCredentials(true);
         
         // Cache preflight CORS (1 heure)
@@ -88,7 +92,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsFilter corsFilter() {
-        return new CorsFilter(corsConfigurationSource());
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistrationBean() {
+        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(corsConfigurationSource()));
+        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return bean;
     }
 }
