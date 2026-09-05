@@ -43,7 +43,8 @@ export interface ClientCheckResult {
   existingClientName?: string;
   existingClientId?: number;
   globalBlacklistCount: number;
-  isMultiBlacklisted: boolean;
+  isMultiBlacklisted?: boolean;
+  multiBlacklisted?: boolean;
   blacklistReasons: string[];
   suggestedRiskScore?: number;
   warningMessage?: string;

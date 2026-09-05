@@ -225,7 +225,8 @@ export class CrmComponent implements OnInit, OnDestroy {
         this.toastService.warning('Ce client figure déjà dans votre agence. Impossible de créer un doublon.', 'Doublon');
         return;
       }
-      if (this.cinCheckResult?.isMultiBlacklisted && !this.acceptHighRiskConsent) {
+      const isMulti = ((this.cinCheckResult?.globalBlacklistCount || 0) >= 2) || !!this.cinCheckResult?.isMultiBlacklisted || !!this.cinCheckResult?.multiBlacklisted;
+      if (isMulti && !this.acceptHighRiskConsent) {
         this.toastService.warning('Veuillez confirmer votre acceptation pour enregistrer ce client multi-bloqué.', 'Validation Requise');
         return;
       }

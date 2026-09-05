@@ -135,9 +135,10 @@
               <div style="position: relative;">
                 <input type="text" class="form-control" [(ngModel)]="newClient.cinPassport" (ngModelChange)="onCinInput()" (blur)="onCinInput()" name="cinPassport" required placeholder="ex: BE897654" style="text-transform: uppercase; padding-right: 34px;">
                 <i *ngIf="isCheckingCin" class="fa-solid fa-spinner fa-spin" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: #3b82f6;"></i>
-                <i *ngIf="!isCheckingCin && cinCheckResult?.existsInCurrentTenant" class="fa-solid fa-circle-xmark" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #ef4444;"></i>
-                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.isMultiBlacklisted" class="fa-solid fa-triangle-exclamation" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #f59e0b;"></i>
-                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && !cinCheckResult.isMultiBlacklisted && (newClient.cinPassport?.length || 0) >= 3" class="fa-solid fa-circle-check" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #10b981;"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult?.existsInCurrentTenant" class="fa-solid fa-circle-xmark" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #ef4444;" title="Client déjà enregistré dans votre agence"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && ((cinCheckResult.globalBlacklistCount || 0) >= 2 || cinCheckResult.isMultiBlacklisted || cinCheckResult.multiBlacklisted)" class="fa-solid fa-triangle-exclamation" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #ef4444;" title="Client bloqué plusieurs fois"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.globalBlacklistCount === 1" class="fa-solid fa-circle-exclamation" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #f59e0b;" title="1 antécédent de blocage"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.globalBlacklistCount === 0 && (newClient.cinPassport?.length || 0) >= 3" class="fa-solid fa-circle-check" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #10b981;" title="Client sans antécédent négatif"></i>
               </div>
             </div>
             <div class="form-group">
@@ -165,8 +166,10 @@
               <div style="position: relative;">
                 <input type="text" class="form-control" [(ngModel)]="newClient.iceNumber" (ngModelChange)="onCinInput()" (blur)="onCinInput()" name="iceNumber" required placeholder="ex: 002345678000045" style="padding-right: 34px;">
                 <i *ngIf="isCheckingCin" class="fa-solid fa-spinner fa-spin" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: #3b82f6;"></i>
-                <i *ngIf="!isCheckingCin && cinCheckResult?.existsInCurrentTenant" class="fa-solid fa-circle-xmark" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #ef4444;"></i>
-                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.isMultiBlacklisted" class="fa-solid fa-triangle-exclamation" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #f59e0b;"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult?.existsInCurrentTenant" class="fa-solid fa-circle-xmark" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #ef4444;" title="Entreprise déjà enregistrée"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && ((cinCheckResult.globalBlacklistCount || 0) >= 2 || cinCheckResult.isMultiBlacklisted || cinCheckResult.multiBlacklisted)" class="fa-solid fa-triangle-exclamation" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #ef4444;" title="Entreprise bloquée plusieurs fois"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.globalBlacklistCount === 1" class="fa-solid fa-circle-exclamation" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #f59e0b;" title="1 antécédent de blocage"></i>
+                <i *ngIf="!isCheckingCin && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.globalBlacklistCount === 0 && (newClient.iceNumber?.length || 0) >= 3" class="fa-solid fa-circle-check" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; color: #10b981;" title="Entreprise sans antécédent négatif"></i>
               </div>
             </div>
             <div class="form-group">
@@ -191,7 +194,7 @@
         </div>
 
         <!-- 2. Multi-blacklisted across SaaS network (>= 2 times) -->
-        <div *ngIf="!isEditMode && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.isMultiBlacklisted" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+        <div *ngIf="!isEditMode && cinCheckResult && !cinCheckResult.existsInCurrentTenant && ((cinCheckResult.globalBlacklistCount || 0) >= 2 || cinCheckResult.isMultiBlacklisted || cinCheckResult.multiBlacklisted)" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
           <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px;">
             <div style="width: 34px; height: 34px; min-width: 34px; border-radius: 8px; background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center; color: #ef4444; font-size: 1.1rem;">
               <i class="fa-solid fa-triangle-exclamation"></i>
@@ -227,7 +230,7 @@
         </div>
 
         <!-- 4. Clean verified client badge -->
-        <div *ngIf="!isEditMode && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.globalBlacklistCount === 0 && (newClient.cinPassport?.length || 0) >= 3" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #34d399; font-size: 0.8rem;">
+        <div *ngIf="!isEditMode && cinCheckResult && !cinCheckResult.existsInCurrentTenant && cinCheckResult.globalBlacklistCount === 0 && ((newClient.cinPassport?.length || 0) >= 3 || (newClient.iceNumber?.length || 0) >= 3)" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #34d399; font-size: 0.8rem;">
           <i class="fa-solid fa-circle-check"></i>
           <span>Identifiant vérifié : Nouveau client (0 antécédent négatif dans le réseau SaaS - Score 95/100).</span>
         </div>
@@ -246,7 +249,7 @@
 
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
           <button type="button" class="btn btn-secondary" [disabled]="isSubmitting" (click)="closeModal()">Annuler</button>
-          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || isCheckingCin || (!isEditMode && cinCheckResult?.existsInCurrentTenant) || (!isEditMode && cinCheckResult?.isMultiBlacklisted && !acceptHighRiskConsent)">
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || isCheckingCin || (!isEditMode && cinCheckResult?.existsInCurrentTenant) || (!isEditMode && ((cinCheckResult?.globalBlacklistCount || 0) >= 2 || cinCheckResult?.isMultiBlacklisted || cinCheckResult?.multiBlacklisted) && !acceptHighRiskConsent)">
             <i class="fa-solid fa-spinner fa-spin" *ngIf="isSubmitting"></i>
             <i class="fa-solid fa-check" *ngIf="!isSubmitting"></i>
             <span>{{ isSubmitting ? (isEditMode ? 'Modification en cours...' : 'Enregistrement en cours...') : (isEditMode ? 'Enregistrer les modifications' : 'Créer Fiche Client') }}</span>

@@ -1,5 +1,6 @@
 package com.rentflow.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import java.util.List;
 
@@ -15,8 +16,16 @@ public class ClientCheckResultDto {
     
     // Global Shared Anti-Fraud Network
     private int globalBlacklistCount;
+    
+    @JsonProperty("isMultiBlacklisted")
     private boolean isMultiBlacklisted;
+    
     private List<String> blacklistReasons;
     private Integer suggestedRiskScore;
     private String warningMessage;
+
+    @JsonProperty("multiBlacklisted")
+    public boolean isMultiBlacklistedProperty() {
+        return globalBlacklistCount >= 2 || isMultiBlacklisted;
+    }
 }
