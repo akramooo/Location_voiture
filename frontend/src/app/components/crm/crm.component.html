@@ -1,12 +1,19 @@
 <div class="crm-component fade-in">
-  <div class="crm-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <div class="crm-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
     <div>
       <h1 class="page-title">CRM Clients & Scoring Anti-Fraude</h1>
-      <p class="page-subtitle">Gestion des fiches clients, scoring de confiance 0-100 et blacklist partagée.</p>
+      <p class="page-subtitle">Gestion des fiches clients, scoring de confiance 0-100, unicité CIN/ICE et blacklist partagée.</p>
     </div>
-    <button class="btn btn-primary" (click)="openModal()">
-      <i class="fa-solid fa-user-plus"></i> Nouveau Client
-    </button>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <!-- Search Input -->
+      <div style="position: relative; width: 280px;">
+        <input type="text" [(ngModel)]="searchTerm" class="form-control" placeholder="Rechercher par nom, CIN, ICE, tél..." style="padding-left: 36px; font-size: 0.85rem; height: 38px;">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: #64748b;"></i>
+      </div>
+      <button class="btn btn-primary" (click)="openModal()" style="height: 38px;">
+        <i class="fa-solid fa-user-plus"></i> Nouveau Client
+      </button>
+    </div>
   </div>
 
   <div class="glass-panel main-crm-panel" style="padding: 24px;">
@@ -18,30 +25,66 @@
             <th>Nom / Raison Sociale</th>
             <th>CIN / ICE</th>
             <th>Permis / Mandat</th>
-            <th>WhatsApp</th>
-            <th>Score de Confiance</th>
-            <th>Statut Blacklist</th>
+            <th>WhatsApp / Tél</th>
+            <th>Score Confiance</th>
+            <th>Anti-Fraude</th>
+            <th style="text-align: right;">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let c of clients" [style.background]="c.blacklisted ? 'rgba(239, 68, 68, 0.08)' : ''">
-            <td><span class="badge" [class.badge-DISPONIBLE]="c.clientType === 'PARTICULIER'" [class.badge-RESERVE]="c.clientType === 'ENTREPRISE'">{{ c.clientType }}</span></td>
-            <td style="font-weight: 700;" [style.color]="c.blacklisted ? '#f87171' : ''">{{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }}</td>
-            <td>{{ c.clientType === 'ENTREPRISE' ? (c.iceNumber + ' (ICE)') : c.cinPassport }}</td>
-            <td>{{ c.clientType === 'ENTREPRISE' ? ('Mandat ' + c.designatedDriverName) : c.driverLicenseNumber }}</td>
-            <td>{{ c.phoneWhatsApp }}</td>
+          <tr *ngFor="let c of filteredClients" [style.background]="c.blacklisted ? 'rgba(239, 68, 68, 0.08)' : ''">
             <td>
-              <span [style.color]="c.riskScore > 70 ? '#10b981' : '#ef4444'" style="font-weight: 800;">
-                <i class="fa-solid" [class.fa-shield-halved]="c.riskScore > 70" [class.fa-triangle-exclamation]="c.riskScore <= 70"></i> {{ c.riskScore }} / 100
+              <span class="badge" [class.badge-DISPONIBLE]="c.clientType === 'PARTICULIER'" [class.badge-RESERVE]="c.clientType === 'ENTREPRISE'">
+                {{ c.clientType }}
+              </span>
+            </td>
+            <td style="font-weight: 700;" [style.color]="c.blacklisted ? '#f87171' : ''">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="avatar" style="width: 28px; height: 28px; font-size: 0.75rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                  {{ c.clientType === 'ENTREPRISE' ? '🏢' : (c.firstName ? c.firstName.charAt(0) : 'U') }}
+                </div>
+                <span>{{ c.clientType === 'ENTREPRISE' ? (c.companyName || c.firstName) : ((c.firstName || '') + ' ' + (c.lastName || '')) }}</span>
+              </div>
+            </td>
+            <td>
+              <code style="background: rgba(255, 255, 255, 0.05); padding: 2px 6px; border-radius: 4px; color: #38bdf8; font-weight: 600;">
+                {{ c.clientType === 'ENTREPRISE' ? (c.iceNumber ? c.iceNumber + ' (ICE)' : (c.cinPassport || '-')) : (c.cinPassport || '-') }}
+              </code>
+            </td>
+            <td>
+              <span *ngIf="c.clientType === 'ENTREPRISE'" style="font-size: 0.85rem; color: #94a3b8;">
+                {{ c.designatedDriverName ? 'Mandat : ' + c.designatedDriverName : '-' }}
+              </span>
+              <span *ngIf="c.clientType !== 'ENTREPRISE'" style="font-size: 0.85rem;">
+                {{ c.driverLicenseNumber || '-' }}
+              </span>
+            </td>
+            <td>{{ c.phoneWhatsApp || '-' }}</td>
+            <td>
+              <span [style.color]="c.riskScore > 70 ? '#10b981' : '#ef4444'" style="font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid" [class.fa-shield-halved]="c.riskScore > 70" [class.fa-triangle-exclamation]="c.riskScore <= 70"></i>
+                {{ c.riskScore }} / 100
               </span>
             </td>
             <td>
-              <button *ngIf="c.blacklisted" class="btn btn-secondary btn-xs" style="color: #10b981;" (click)="toggleBlacklist(c)"><i class="fa-solid fa-unlock"></i> Débloquer</button>
-              <button *ngIf="!c.blacklisted" class="btn btn-danger btn-xs" (click)="toggleBlacklist(c)"><i class="fa-solid fa-ban"></i> Blacklister</button>
+              <button *ngIf="c.blacklisted" class="btn btn-secondary btn-xs" style="color: #10b981; border-color: rgba(16, 185, 129, 0.3);" (click)="toggleBlacklist(c)" title="Débloquer ce client">
+                <i class="fa-solid fa-unlock"></i> Débloquer
+              </button>
+              <button *ngIf="!c.blacklisted" class="btn btn-danger btn-xs" (click)="toggleBlacklist(c)" title="Signaler en blacklist">
+                <i class="fa-solid fa-ban"></i> Blacklister
+              </button>
+            </td>
+            <td style="text-align: right;">
+              <button class="btn btn-secondary btn-xs" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); padding: 5px 9px;" (click)="openDeleteModal(c)" title="Supprimer définitivement ce client">
+                <i class="fa-solid fa-trash"></i>
+              </button>
             </td>
           </tr>
-          <tr *ngIf="clients.length === 0">
-            <td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">Aucun client enregistré. Cliquez sur "Nouveau Client".</td>
+          <tr *ngIf="filteredClients.length === 0">
+            <td colspan="8" style="text-align:center; padding: 36px; color: var(--text-muted);">
+              <i class="fa-solid fa-users-slash" style="font-size: 2rem; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+              {{ searchTerm ? 'Aucun client ne correspond à votre recherche.' : 'Aucun client enregistré. Cliquez sur "Nouveau Client".' }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -49,60 +92,115 @@
   </div>
 
   <!-- Angular Add Client Modal Dialog -->
-  <div class="modal-backdrop" [class.active]="isModalOpen">
-    <div class="modal-dialog glass-panel">
+  <div class="modal-backdrop" [class.active]="isModalOpen" (click)="closeModal()">
+    <div class="modal-dialog glass-panel" (click)="$event.stopPropagation()" style="max-width: 580px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-user-plus blue-icon"></i> Ajouter un Nouveau Client</h2>
-        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" [disabled]="isSubmitting" (click)="closeModal()">&times;</button>
       </div>
 
       <form (ngSubmit)="submitClient()">
         <div class="form-group">
           <label class="form-label">Type de Client</label>
           <select class="form-control" [(ngModel)]="newClient.clientType" name="clientType">
-            <option value="PARTICULIER">PARTICULIER</option>
-            <option value="ENTREPRISE">ENTREPRISE</option>
+            <option value="PARTICULIER">PARTICULIER (Personne Physique)</option>
+            <option value="ENTREPRISE">ENTREPRISE (Personne Morale B2B)</option>
           </select>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-          <div class="form-group">
-            <label class="form-label">Prénom / Raison Sociale</label>
-            <input type="text" class="form-control" [(ngModel)]="newClient.firstName" name="firstName" required placeholder="ex: Youssef ou SARL Transport">
+        <!-- Particulier Form Fields -->
+        <ng-container *ngIf="newClient.clientType === 'PARTICULIER'">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">Prénom <span style="color: #ef4444;">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="newClient.firstName" name="firstName" required placeholder="ex: Youssef">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nom de famille</label>
+              <input type="text" class="form-control" [(ngModel)]="newClient.lastName" name="lastName" placeholder="ex: Benani">
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Nom de famille</label>
-            <input type="text" class="form-control" [(ngModel)]="newClient.lastName" name="lastName" placeholder="ex: Benani">
-          </div>
-        </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-          <div class="form-group">
-            <label class="form-label">CIN / Passeport / ICE</label>
-            <input type="text" class="form-control" [(ngModel)]="newClient.cinPassport" name="cinPassport" required placeholder="ex: BE897654">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">CIN / N° Passeport <span style="color: #ef4444;">* (Unique)</span></label>
+              <input type="text" class="form-control" [(ngModel)]="newClient.cinPassport" name="cinPassport" required placeholder="ex: BE897654" style="text-transform: uppercase;">
+            </div>
+            <div class="form-group">
+              <label class="form-label">N° Permis de Conduire</label>
+              <input type="text" class="form-control" [(ngModel)]="newClient.driverLicenseNumber" name="driverLicenseNumber" placeholder="ex: 05/123456">
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">N° Permis de Conduire</label>
-            <input type="text" class="form-control" [(ngModel)]="newClient.driverLicenseNumber" name="driverLicenseNumber" required placeholder="ex: 05/123456">
-          </div>
-        </div>
+        </ng-container>
 
+        <!-- Entreprise B2B Form Fields -->
+        <ng-container *ngIf="newClient.clientType === 'ENTREPRISE'">
+          <div class="form-group">
+            <label class="form-label">Raison Sociale / Société <span style="color: #ef4444;">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="newClient.companyName" name="companyName" required placeholder="ex: SARL Transport & Logistics">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">N° ICE Entreprise <span style="color: #ef4444;">* (Unique)</span></label>
+              <input type="text" class="form-control" [(ngModel)]="newClient.iceNumber" name="iceNumber" required placeholder="ex: 002345678000045">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Conducteur Désigné / Mandataire</label>
+              <input type="text" class="form-control" [(ngModel)]="newClient.designatedDriverName" name="designatedDriverName" placeholder="ex: Karim Tazi">
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Common Contact Fields -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
-            <label class="form-label">Téléphone WhatsApp</label>
+            <label class="form-label">Téléphone WhatsApp <span style="color: #ef4444;">*</span></label>
             <input type="text" class="form-control" [(ngModel)]="newClient.phoneWhatsApp" name="phoneWhatsApp" required placeholder="+212 661 000000">
           </div>
           <div class="form-group">
             <label class="form-label">Email</label>
-            <input type="email" class="form-control" [(ngModel)]="newClient.email" name="email" placeholder="client@gmail.com">
+            <input type="email" class="form-control" [(ngModel)]="newClient.email" name="email" placeholder="client@domaine.com">
           </div>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
-          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Créer Fiche Client</button>
+          <button type="button" class="btn btn-secondary" [disabled]="isSubmitting" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            <i class="fa-solid fa-spinner fa-spin" *ngIf="isSubmitting"></i>
+            <i class="fa-solid fa-check" *ngIf="!isSubmitting"></i>
+            <span>{{ isSubmitting ? 'Enregistrement en cours...' : 'Créer Fiche Client' }}</span>
+          </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirmation Suppression Client -->
+  <div class="modal-backdrop" [class.active]="isDeleteModalOpen" (click)="closeDeleteModal()">
+    <div class="modal-dialog glass-panel" (click)="$event.stopPropagation()" style="max-width: 480px; border-left: 4px solid #ef4444;">
+      <div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px;">
+        <div style="width: 44px; height: 44px; min-width: 44px; border-radius: 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; color: #ef4444; font-size: 1.25rem;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: #ffffff; margin-bottom: 4px;">Supprimer la fiche client</h3>
+          <p style="font-size: 0.85rem; color: #94a3b8; line-height: 1.4; margin: 0;">
+            Êtes-vous sûr de vouloir supprimer définitivement le client 
+            <strong style="color: #f8fafc;">{{ clientToDelete?.clientType === 'ENTREPRISE' ? (clientToDelete?.companyName || clientToDelete?.firstName) : (clientToDelete?.firstName + ' ' + (clientToDelete?.lastName || '')) }}</strong> 
+            (Identifiant : <code style="color: #38bdf8;">{{ clientToDelete?.clientType === 'ENTREPRISE' ? clientToDelete?.iceNumber : clientToDelete?.cinPassport }}</code>) ?
+          </p>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+        <button type="button" class="btn btn-secondary" [disabled]="isDeleting" (click)="closeDeleteModal()">Annuler</button>
+        <button type="button" class="btn btn-danger" [disabled]="isDeleting" (click)="confirmDeleteClient()">
+          <i class="fa-solid fa-spinner fa-spin" *ngIf="isDeleting"></i>
+          <i class="fa-solid fa-trash" *ngIf="!isDeleting"></i>
+          <span>{{ isDeleting ? 'Suppression...' : 'Supprimer définitivement' }}</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>

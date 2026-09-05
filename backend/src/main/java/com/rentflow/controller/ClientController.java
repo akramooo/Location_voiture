@@ -33,9 +33,25 @@ public class ClientController {
     }
 
     @PostMapping
-    public ResponseEntity<ClientDto> createClient(@RequestBody ClientDto clientDto) {
-        ClientDto saved = clientService.createClient(clientDto);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<?> createClient(@RequestBody ClientDto clientDto) {
+        try {
+            ClientDto saved = clientService.createClient(clientDto);
+            return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteClient(@PathVariable Long id) {
+        try {
+            clientService.deleteClient(id);
+            return ResponseEntity.ok(Map.of("message", "Client supprimé avec succès"));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
@@ -45,6 +61,8 @@ public class ClientController {
             return ResponseEntity.ok(saved);
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 

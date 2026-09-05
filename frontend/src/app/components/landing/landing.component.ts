@@ -20,8 +20,8 @@ export class LandingComponent {
 
   faqs = [
     {
-      question: "Pourquoi choisir RentFlow SaaS après plus de 10 ans de développement ?",
-      answer: "Fort de nombreuses années d'expérience, RentFlow a été perfectionné pour répondre aux besoins réels des agences de location marocaines. Notre plateforme est stable, éprouvée et continuellement améliorée."
+      question: "Pourquoi choisir RentFlow pour la gestion de votre agence de location ?",
+      answer: "RentFlow est spécialement conçu pour automatiser et sécuriser l'ensemble de votre activité au quotidien : scan intelligent des documents (CIN, Permis, Passeport) par IA, états des lieux 2D tactiles sur smartphone, conformité fiscale DGI/ICE, suivi rigoureux des cautions/chèques et réassignation des PV radars. Vous gagnez un temps précieux, éliminez les fraudes et maximisez votre rentabilité."
     },
     {
       question: "Combien de véhicules puis-je gérer sur la plateforme ?",

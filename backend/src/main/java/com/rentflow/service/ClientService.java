@@ -10,6 +10,7 @@ public interface ClientService {
     ClientDto getClientById(Long id);
     ClientDto createClient(ClientDto clientDto);
     ClientDto updateClient(Long id, ClientDto updatedDto);
+    void deleteClient(Long id);
     ClientDto toggleBlacklist(Long id, Map<String, String> body);
     List<ClientDto> getBlacklistedClients();
 }

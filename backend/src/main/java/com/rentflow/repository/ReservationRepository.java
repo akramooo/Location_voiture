@@ -17,4 +17,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     @Query("SELECT COALESCE(SUM(r.totalAmount), 0.0) FROM Reservation r WHERE r.tenant.id = :tenantId AND r.status <> 'ANNULEE'")
     Double calculateTotalRevenue(Long tenantId);
+
+    long countByTenantIdAndClientId(Long tenantId, Long clientId);
 }

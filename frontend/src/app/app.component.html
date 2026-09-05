@@ -151,13 +151,50 @@
         </div>
       </div>
 
-      <div class="header-right">
+      <div class="header-right" style="position: relative;">
         <div class="header-action-btn" (click)="openProfileModal()" title="Paramètres du Profil">
           <i class="fa-solid fa-user-gear"></i>
         </div>
-        <div class="header-action-btn" title="Notifications">
+        <div class="header-action-btn notif-btn-trigger" (click)="toggleNotifications($event)" title="Notifications">
           <i class="fa-solid fa-bell"></i>
-          <span class="notification-dot"></span>
+          <span class="notification-dot" *ngIf="unreadNotificationsCount > 0"></span>
+        </div>
+
+        <!-- Notification Center Dropdown -->
+        <div class="notification-dropdown" *ngIf="isNotificationsOpen" (click)="$event.stopPropagation()">
+          <div class="notif-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 800; font-size: 0.92rem; color: #f8fafc;">Centre de Notifications</span>
+              <span class="notif-counter-badge" *ngIf="unreadNotificationsCount > 0">{{ unreadNotificationsCount }}</span>
+            </div>
+            <button class="notif-read-all-btn" *ngIf="unreadNotificationsCount > 0" (click)="markAllAsRead()">
+              <i class="fa-solid fa-check-double" style="margin-right: 4px;"></i> Tout marquer comme lu
+            </button>
+          </div>
+
+          <div class="notif-list">
+            <div *ngFor="let notif of getNotifications()" 
+                 class="notif-item" 
+                 [class.unread]="!notif.read"
+                 (click)="handleNotificationClick(notif)">
+              <div class="notif-icon-box" [ngClass]="notif.iconClass">
+                <i [class]="notif.icon"></i>
+              </div>
+              <div class="notif-content">
+                <div class="notif-title-row">
+                  <span class="notif-item-title">{{ notif.title }}</span>
+                  <span class="notif-time">{{ notif.time }}</span>
+                </div>
+                <p class="notif-message">{{ notif.message }}</p>
+              </div>
+              <div class="notif-unread-dot" *ngIf="!notif.read"></div>
+            </div>
+
+            <div *ngIf="getNotifications().length === 0" class="notif-empty">
+              <i class="fa-regular fa-bell-slash" style="font-size: 2rem; color: #64748b; margin-bottom: 8px;"></i>
+              <p style="color: #94a3b8; font-size: 0.85rem; margin: 0;">Aucune notification pour le moment</p>
+            </div>
+          </div>
         </div>
       </div>
     </header>

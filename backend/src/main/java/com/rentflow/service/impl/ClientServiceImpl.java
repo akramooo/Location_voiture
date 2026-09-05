@@ -5,6 +5,8 @@ import com.rentflow.domain.Tenant;
 import com.rentflow.dto.ClientDto;
 import com.rentflow.mapper.ClientMapper;
 import com.rentflow.repository.ClientRepository;
+import com.rentflow.repository.InvoiceRepository;
+import com.rentflow.repository.ReservationRepository;
 import com.rentflow.repository.TenantRepository;
 import com.rentflow.security.TenantContext;
 import com.rentflow.service.ClientService;
@@ -24,6 +26,8 @@ public class ClientServiceImpl implements ClientService {
 
     private final ClientRepository clientRepository;
     private final TenantRepository tenantRepository;
+    private final ReservationRepository reservationRepository;
+    private final InvoiceRepository invoiceRepository;
     private final ClientMapper clientMapper;
 
     @Override
@@ -52,6 +56,24 @@ public class ClientServiceImpl implements ClientService {
         Long tenantId = TenantContext.getCurrentTenant();
         Tenant tenant = tenantRepository.findById(tenantId).orElseThrow();
 
+        // 1. Unicité du CIN / Passeport pour les particuliers
+        if (clientDto.getCinPassport() != null && !clientDto.getCinPassport().trim().isEmpty()) {
+            String normalizedCin = clientDto.getCinPassport().trim().toUpperCase();
+            clientDto.setCinPassport(normalizedCin);
+            if (clientRepository.findByTenantIdAndCinPassport(tenantId, normalizedCin).isPresent()) {
+                throw new IllegalArgumentException("Un client avec le CIN / Passeport '" + normalizedCin + "' existe déjà dans votre base.");
+            }
+        }
+
+        // 2. Unicité de l'ICE pour les entreprises
+        if (clientDto.getIceNumber() != null && !clientDto.getIceNumber().trim().isEmpty()) {
+            String normalizedIce = clientDto.getIceNumber().trim();
+            clientDto.setIceNumber(normalizedIce);
+            if (clientRepository.findByTenantIdAndIceNumber(tenantId, normalizedIce).isPresent()) {
+                throw new IllegalArgumentException("Une entreprise avec l'ICE '" + normalizedIce + "' existe déjà dans votre base.");
+            }
+        }
+
         Client client = clientMapper.toEntity(clientDto);
         client.setTenant(tenant);
 
@@ -61,6 +83,28 @@ public class ClientServiceImpl implements ClientService {
 
         Client saved = clientRepository.save(client);
         return clientMapper.toDto(saved);
+    }
+
+    @Override
+    public void deleteClient(Long id) {
+        Long tenantId = TenantContext.getCurrentTenant();
+        Optional<Client> clientOpt = clientRepository.findById(id);
+
+        if (clientOpt.isEmpty() || !clientOpt.get().getTenant().getId().equals(tenantId)) {
+            throw new NoSuchElementException("Client non trouvé");
+        }
+
+        long reservationCount = reservationRepository.countByTenantIdAndClientId(tenantId, id);
+        if (reservationCount > 0) {
+            throw new IllegalStateException("Impossible de supprimer ce client : " + reservationCount + " contrat(s) ou réservation(s) lui sont associés. Vous pouvez le blacklister à la place.");
+        }
+
+        long invoiceCount = invoiceRepository.countByTenantIdAndClientId(tenantId, id);
+        if (invoiceCount > 0) {
+            throw new IllegalStateException("Impossible de supprimer ce client : des factures lui sont rattachées.");
+        }
+
+        clientRepository.delete(clientOpt.get());
     }
 
     @Override

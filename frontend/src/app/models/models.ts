@@ -21,9 +21,9 @@ export interface Client {
   clientType: string;
   firstName?: string;
   lastName?: string;
-  cinPassport: string;
-  driverLicenseNumber: string;
-  phoneWhatsApp: string;
+  cinPassport?: string;
+  driverLicenseNumber?: string;
+  phoneWhatsApp?: string;
   email?: string;
   nationality?: string;
   companyName?: string;
@@ -31,6 +31,7 @@ export interface Client {
   ifNumber?: string;
   rcNumber?: string;
   designatedDriverName?: string;
+  designatedDriverCin?: string;
   riskScore: number;
   blacklisted: boolean;
   blacklistReason?: string;
