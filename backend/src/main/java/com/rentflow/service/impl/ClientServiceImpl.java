@@ -100,9 +100,9 @@ public class ClientServiceImpl implements ClientService {
         // 2. Vérification réseau SaaS Anti-Fraude (Multi-Blacklist)
         List<Client> globalBlacklisted = List.of();
         if (!normalizedCin.isEmpty()) {
-            globalBlacklisted = clientRepository.findByCinPassportIgnoreCaseAndBlacklistedTrue(normalizedCin);
+            globalBlacklisted = clientRepository.findBlacklistedByCin(normalizedCin);
         } else if (!normalizedIce.isEmpty()) {
-            globalBlacklisted = clientRepository.findByIceNumberIgnoreCaseAndBlacklistedTrue(normalizedIce);
+            globalBlacklisted = clientRepository.findBlacklistedByIce(normalizedIce);
         }
 
         int count = globalBlacklisted.size();
