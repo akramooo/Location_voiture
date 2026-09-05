@@ -1,0 +1,52 @@
+<div class="pricing-component fade-in">
+  <div class="pricing-header" style="text-align: center; margin-bottom: 32px;">
+    <h1 class="page-title" style="font-size: 2rem;">Tarification Simple & Transparente (Loc.ma)</h1>
+    <p class="page-subtitle">Sélectionnez le nombre de véhicules de votre flotte et profitez de toutes les fonctionnalités sans restriction.</p>
+  </div>
+
+  <div class="glass-panel" style="max-width: 720px; margin: 0 auto; padding: 40px;">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <span style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Nombre de Véhicules en Flotte</span>
+      <div style="font-size: 2.5rem; font-weight: 800; color: #60a5fa; margin-top: 6px;">{{ vehicleCount }} Véhicules</div>
+    </div>
+
+    <!-- Range Slider -->
+    <div style="margin-bottom: 32px;">
+      <input type="range" min="1" max="60" [(ngModel)]="vehicleCount" style="width: 100%; accent-color: #3b82f6; cursor: pointer; height: 8px;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+        <span>1 véhicule</span>
+        <span>15</span>
+        <span>30</span>
+        <span>45</span>
+        <span>60+ véhicules</span>
+      </div>
+    </div>
+
+    <!-- Plan Toggle -->
+    <div style="display: flex; justify-content: center; gap: 16px; margin-bottom: 32px;">
+      <button class="btn" [class.btn-primary]="selectedPlan === 'MONTHLY'" [class.btn-secondary]="selectedPlan !== 'MONTHLY'" (click)="selectedPlan = 'MONTHLY'">
+        Mensuel
+      </button>
+      <button class="btn" [class.btn-primary]="selectedPlan === 'ANNUAL'" [class.btn-secondary]="selectedPlan !== 'ANNUAL'" (click)="selectedPlan = 'ANNUAL'">
+        <i class="fa-solid fa-gift"></i> Annuel (1 mois GRATUIT)
+      </button>
+    </div>
+
+    <!-- Calculated Price Box -->
+    <div class="glass-card" style="padding: 28px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.08); margin-bottom: 32px;">
+      <div style="font-size: 0.85rem; color: var(--text-muted);">VOTRE TARIF DE GESTION</div>
+      <div style="font-size: 3rem; font-weight: 800; color: #34d399; margin: 8px 0;">
+        {{ getTotalPrice() | number:'1.0-0' }} <span style="font-size: 1.4rem;">MAD</span>
+      </div>
+      <div style="font-size: 0.85rem; color: #60a5fa;">
+        Soit {{ getPerVehicleMonthlyRate() }} MAD / mois par véhicule
+      </div>
+    </div>
+
+    <div style="text-align: center;">
+      <button class="btn btn-primary" style="padding: 14px 32px; font-size: 1rem;" (click)="subscribeNow()">
+        <i class="fa-solid fa-rocket"></i> Commencer Maintenant
+      </button>
+    </div>
+  </div>
+</div>

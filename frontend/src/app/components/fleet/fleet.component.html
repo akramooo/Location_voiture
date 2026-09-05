@@ -1,0 +1,158 @@
+<div class="fleet-component fade-in">
+  <div class="fleet-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+      <h1 class="page-title">Gestion du Parc Automobile</h1>
+      <p class="page-subtitle">Suivi en temps réel de votre flotte, modification directe de l'état des véhicules, kilométrage et tarifs.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fa-solid fa-car-plus"></i> Ajouter un Nouveau Véhicule
+    </button>
+  </div>
+
+  <!-- Fleet Table -->
+  <div class="glass-panel main-table-panel" style="padding: 24px;">
+    <div class="custom-table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Véhicule</th>
+            <th>Immatriculation</th>
+            <th>Carburant & Boîte</th>
+            <th>Kilométrage Actuel</th>
+            <th>Tarif Journalier</th>
+            <th>Changer l'État du Véhicule</th>
+            <th>Actions & Suppression</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let v of vehicles">
+            <td>
+              <div style="font-weight: 700; color: white;">{{ v.brand }} {{ v.model }}</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Année {{ v.year }}</div>
+            </td>
+            <td>
+              <span style="background: rgba(255,255,255,0.08); padding: 4px 10px; border-radius: 6px; font-weight: 700; font-family: monospace; color: #60a5fa;">
+                {{ v.registrationNumber }}
+              </span>
+            </td>
+            <td>
+              <div>{{ v.fuelType }}</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">{{ v.gearbox }}</div>
+            </td>
+            <td>
+              <div style="font-weight: 800; color: #38bdf8;"><i class="fa-solid fa-gauge"></i> {{ v.currentMileage | number }} KM</div>
+            </td>
+            <td style="font-weight: 800; color: #34d399;">
+              {{ v.dailyRate }} MAD <span style="font-size: 0.75rem; font-weight: 400; color: var(--text-muted);">/jour</span>
+            </td>
+            <td>
+              <!-- Interactive Status Selector Dropdown -->
+              <select class="status-select-dropdown" [ngModel]="v.status" (ngModelChange)="changeVehicleStatus(v, $event)" [class]="'select-' + v.status">
+                <option value="DISPONIBLE">🟢 DISPONIBLE</option>
+                <option value="LOUE">🔵 LOUÉ</option>
+                <option value="RESERVE">🟣 RÉSERVÉ</option>
+                <option value="EN_MAINTENANCE">🟡 EN MAINTENANCE</option>
+                <option value="BLOQUE_LITIGE">🔴 BLOQUÉ / LITIGE</option>
+              </select>
+            </td>
+            <td>
+              <!-- Quick Action & Delete Buttons -->
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <button *ngIf="v.status !== 'DISPONIBLE'" class="btn btn-secondary btn-xs" style="color: #34d399; border-color: rgba(52,211,153,0.3);" (click)="changeVehicleStatus(v, 'DISPONIBLE')" title="Rendre Disponible">
+                  <i class="fa-solid fa-circle-check"></i> Dispo
+                </button>
+                <button *ngIf="v.status !== 'EN_MAINTENANCE'" class="btn btn-secondary btn-xs" style="color: #fbbf24; border-color: rgba(251,191,36,0.3);" (click)="changeVehicleStatus(v, 'EN_MAINTENANCE')" title="Mettre en Maintenance">
+                  <i class="fa-solid fa-wrench"></i> Maint.
+                </button>
+                
+                <!-- DELETE VEHICLE BUTTON -->
+                <button class="btn btn-danger btn-xs" (click)="deleteVehicle(v)" title="Supprimer le véhicule" style="background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.4);">
+                  <i class="fa-solid fa-trash-can"></i> Supprimer
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="vehicles.length === 0">
+            <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">Aucun véhicule dans le parc.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Angular Add Vehicle Modal (With Input KM) -->
+  <div class="modal-backdrop" [class.active]="isModalOpen">
+    <div class="modal-dialog glass-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-car blue-icon"></i> Ajouter un Nouveau Véhicule au Parc</h2>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
+      </div>
+
+      <form (ngSubmit)="submitVehicle()">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Marque</label>
+            <input type="text" class="form-control" [(ngModel)]="newVehicle.brand" name="brand" required placeholder="ex: Dacia, Renault, BMW">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Modèle</label>
+            <input type="text" class="form-control" [(ngModel)]="newVehicle.model" name="model" required placeholder="ex: Logan, Clio 5, X5">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Immatriculation</label>
+            <input type="text" class="form-control" [(ngModel)]="newVehicle.registrationNumber" name="registrationNumber" required placeholder="12345-A-6">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Année</label>
+            <input type="number" class="form-control" [(ngModel)]="newVehicle.year" name="year" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Carburant</label>
+            <select class="form-control" [(ngModel)]="newVehicle.fuelType" name="fuelType">
+              <option value="DIESEL">DIESEL</option>
+              <option value="ESSENCE">ESSENCE</option>
+              <option value="HYBRIDE">HYBRIDE</option>
+              <option value="ELECTRIQUE">ÉLECTRIQUE</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Boîte de Vitesses</label>
+            <select class="form-control" [(ngModel)]="newVehicle.gearbox" name="gearbox">
+              <option value="MANUELLE">MANUELLE</option>
+              <option value="AUTOMATIQUE">AUTOMATIQUE</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px;">
+          <div class="form-group" style="background: rgba(56, 189, 248, 0.08); padding: 12px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.25);">
+            <label class="form-label" style="color: #38bdf8; font-weight: 700;">
+              <i class="fa-solid fa-gauge"></i> Kilométrage Actuel (KM) *
+            </label>
+            <input type="number" class="form-control" [(ngModel)]="newVehicle.currentMileage" name="currentMileage" required placeholder="ex: 15000" style="border-color: #38bdf8;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Saisissez le compteur kilométrique exact au tableau de bord.</div>
+          </div>
+
+          <div class="form-group" style="background: rgba(52, 211, 153, 0.08); padding: 12px; border-radius: 10px; border: 1px solid rgba(52, 211, 153, 0.25);">
+            <label class="form-label" style="color: #34d399; font-weight: 700;">
+              <i class="fa-solid fa-tag"></i> Tarif Journalier (MAD / jour) *
+            </label>
+            <input type="number" class="form-control" [(ngModel)]="newVehicle.dailyRate" name="dailyRate" required placeholder="ex: 350" style="border-color: #34d399;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Tarif de location par 24h.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Enregistrer le Véhicule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

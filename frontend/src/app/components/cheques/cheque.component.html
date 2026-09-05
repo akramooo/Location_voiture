@@ -1,0 +1,134 @@
+<div class="cheque-component fade-in">
+  <div class="cheque-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+      <h1 class="page-title">Gestion des Chèques & Cautions (RentFlow )</h1>
+      <p class="page-subtitle">Suivi du portefeuille de chèques en caisse, dépôts bancaires et alertes d'échéances.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fa-solid fa-money-check-dollar"></i> Enregistrer un Chèque
+    </button>
+  </div>
+
+  <!-- Summary KPI Card -->
+  <div class="glass-panel" style="padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="width: 46px; height: 46px; background: rgba(59, 130, 246, 0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #60a5fa; font-size: 1.4rem;">
+        <i class="fa-solid fa-vault"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Encours Chèques en Caisse</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: white;">{{ getTotalEnCaisse() | number:'1.2-2' }} MAD</div>
+      </div>
+    </div>
+    <div style="font-size: 0.85rem; color: #34d399; font-weight: 600;">
+      <i class="fa-solid fa-shield-check"></i> Traçabilité & Numérotation Sécurisée
+    </div>
+  </div>
+
+  <div class="glass-panel main-table-panel" style="padding: 24px;">
+    <div class="custom-table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>N° Chèque / Type</th>
+            <th>Émetteur (Client)</th>
+            <th>Banque</th>
+            <th>Montant</th>
+            <th>Échéance</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of cheques">
+            <td>
+              <div style="font-weight: 700; color: #60a5fa;">{{ c.chequeNumber }}</div>
+              <span class="badge" [class.badge-RESERVE]="c.chequeType === 'CAUTION'" [class.badge-DISPONIBLE]="c.chequeType === 'PAIEMENT'">{{ c.chequeType }}</span>
+            </td>
+            <td style="font-weight: 600;">{{ c.issuerName }}</td>
+            <td>{{ c.bankName }}</td>
+            <td style="font-weight: 800; color: #34d399;">{{ c.amount | number:'1.2-2' }} MAD</td>
+            <td>
+              <div>{{ c.dueDate }}</div>
+            </td>
+            <td>
+              <span *ngIf="c.status === 'EN_CAISSE'" class="badge badge-DISPONIBLE">EN CAISSE</span>
+              <span *ngIf="c.status === 'DEPOSE_BANQUE'" class="badge badge-LOUE">DÉPOSÉ EN BANQUE</span>
+              <span *ngIf="c.status === 'ENCAISSE'" class="badge badge-DISPONIBLE">ENCAISSÉ</span>
+              <span *ngIf="c.status === 'RESTITUE'" class="badge badge-RESERVE">RESTITUÉ</span>
+              <span *ngIf="c.status === 'IMPAYE_REJET'" class="badge badge-BLOQUE_LITIGE">IMPAYÉ / REJETÉ</span>
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <button *ngIf="c.status === 'EN_CAISSE'" class="btn btn-secondary btn-xs" (click)="updateStatus(c, 'DEPOSE_BANQUE')">Déposer</button>
+                <button *ngIf="c.status === 'DEPOSE_BANQUE'" class="btn btn-secondary btn-xs" style="color: #34d399;" (click)="updateStatus(c, 'ENCAISSE')">Encaisser</button>
+                <button *ngIf="c.status === 'EN_CAISSE'" class="btn btn-secondary btn-xs" style="color: #c084fc;" (click)="updateStatus(c, 'RESTITUE')">Restituer</button>
+                <button *ngIf="c.status !== 'IMPAYE_REJET'" class="btn btn-danger btn-xs" (click)="updateStatus(c, 'IMPAYE_REJET')">Rejet</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Angular Add Cheque Modal -->
+  <div class="modal-backdrop" [class.active]="isModalOpen">
+    <div class="modal-dialog glass-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-money-check-dollar blue-icon"></i> Enregistrer un NOUVEAU Chèque</h2>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
+      </div>
+
+      <form (ngSubmit)="submitCheque()">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">N° du Chèque</label>
+            <input type="text" class="form-control" [(ngModel)]="newCheque.chequeNumber" name="chequeNumber" required placeholder="CH-123456">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Banque Émettrice</label>
+            <select class="form-control" [(ngModel)]="newCheque.bankName" name="bankName">
+              <option *ngFor="let b of banks" [value]="b">{{ b }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Nom de l'Émetteur</label>
+            <input type="text" class="form-control" [(ngModel)]="newCheque.issuerName" name="issuerName" required placeholder="ex: Guillaume Moreau">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Montant (MAD)</label>
+            <input type="number" class="form-control" [(ngModel)]="newCheque.amount" name="amount" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Date d'Échéance</label>
+            <input type="date" class="form-control" [(ngModel)]="newCheque.dueDate" name="dueDate" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type de Chèque</label>
+            <select class="form-control" [(ngModel)]="newCheque.chequeType" name="chequeType">
+              <option value="CAUTION">Caution / Dépôt de Garantie</option>
+              <option value="PAIEMENT">Paiement / Règlement</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Commentaire / Dossier Réservation</label>
+          <input type="text" class="form-control" [(ngModel)]="newCheque.notes" name="notes" placeholder="Caution location Peugeot 208...">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Enregistrer le Chèque</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

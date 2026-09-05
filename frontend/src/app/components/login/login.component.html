@@ -1,0 +1,43 @@
+<div class="login-wrapper">
+  <div class="login-panel glass-panel">
+    <div class="login-header">
+      <div class="login-brand-icon">
+        <i class="fa-solid fa-car-side"></i>
+      </div>
+      <h1 class="login-title">RentFlow SaaS</h1>
+      <p class="login-subtitle">Plateforme de Gestion de Location de Véhicules</p>
+    </div>
+
+    <!-- Quick Role Switcher for Demo -->
+    <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+      <button type="button" class="btn" [style.background]="username === 'superadmin' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255,255,255,0.04)'" [style.border]="username === 'superadmin' ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.08)'" [style.color]="username === 'superadmin' ? '#fbbf24' : '#94a3b8'" style="flex: 1; padding: 8px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 8px; cursor: pointer;" (click)="setRoleDemo('SUPER_ADMIN')">
+        👑 Super Admin
+      </button>
+      <button type="button" class="btn" [style.background]="username === 'admin' ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255,255,255,0.04)'" [style.border]="username === 'admin' ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.08)'" [style.color]="username === 'admin' ? '#60a5fa' : '#94a3b8'" style="flex: 1; padding: 8px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 8px; cursor: pointer;" (click)="setRoleDemo('ADMIN_AGENCE')">
+        🏢 Gérant Agence
+      </button>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="login-form">
+      <div class="form-group">
+        <label class="form-label"><i class="fa-solid fa-user"></i> Nom d'utilisateur</label>
+        <input type="text" class="form-control" [(ngModel)]="username" name="username" placeholder="ex: superadmin ou admin" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label"><i class="fa-solid fa-lock"></i> Mot de passe</label>
+        <input type="password" class="form-control" [(ngModel)]="password" name="password" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary login-btn" [disabled]="isLoading">
+        <i class="fa-solid" [class.fa-right-to-bracket]="!isLoading" [class.fa-spinner]="isLoading" [class.fa-spin]="isLoading"></i>
+        {{ isLoading ? 'Connexion en cours...' : 'Se Connecter' }}
+      </button>
+
+      <div class="login-footer-info" style="margin-top: 18px; font-size: 0.78rem; color: #94a3b8; line-height: 1.5;">
+        <div>👑 Super Admin : <strong>superadmin</strong> / <strong>superadmin123</strong></div>
+        <div>🏢 Gérant Agence : <strong>admin</strong> / <strong>admin123</strong></div>
+      </div>
+    </form>
+  </div>
+</div>

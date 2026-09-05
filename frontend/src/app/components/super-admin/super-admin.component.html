@@ -1,0 +1,686 @@
+<div class="super-admin-page fade-in">
+  <!-- Master Top Navigation Bar -->
+  <div class="master-header-panel glass-panel">
+    <div class="master-header-left">
+      <div class="crown-badge">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <div>
+        <div class="platform-title-row">
+          <span class="platform-title">RentFlow SaaS Maroc Master Control</span>
+          <span class="hq-badge">HQ MAROC</span>
+          <span class="live-pulse-badge">
+            <span class="pulse-dot"></span> SYSTÈME OPÉRATIONNEL
+          </span>
+        </div>
+        <div class="platform-subtitle">Supervision centrale, gestion multi-agences et tarification par véhicule de la flotte automobile.</div>
+      </div>
+    </div>
+    
+    <div class="master-header-right">
+      <button class="btn btn-primary-gold" (click)="setTab('onboard')">
+        <i class="fa-solid fa-building-circle-check"></i> Provisionner une Agence
+      </button>
+    </div>
+  </div>
+
+  <!-- Master Tabs Navigation Bar -->
+  <div class="master-tabs-bar glass-panel">
+    <button 
+      class="master-tab-btn" 
+      [class.active]="activeTab === 'dashboard'" 
+      (click)="setTab('dashboard')">
+      <i class="fa-solid fa-chart-line"></i>
+      <span>Vue Analytique & Flotte</span>
+    </button>
+
+    <button 
+      class="master-tab-btn" 
+      [class.active]="activeTab === 'onboard'" 
+      (click)="setTab('onboard')">
+      <i class="fa-solid fa-building-user"></i>
+      <span>Onboarding Agence</span>
+      <span *ngIf="generatedCredentials" class="tab-indicator-badge">1 Prêt</span>
+    </button>
+
+    <button 
+      class="master-tab-btn" 
+      [class.active]="activeTab === 'users'" 
+      (click)="setTab('users')">
+      <i class="fa-solid fa-users-gear"></i>
+      <span>Annuaire Gérants ({{ platformUsers.length }})</span>
+    </button>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: VUE ANALYTIQUE & GESTION CENTRALE DES AGENCES (DASHBOARD)          -->
+  <!-- ========================================================================= -->
+  <div *ngIf="activeTab === 'dashboard'" class="tab-content fade-in">
+    <!-- Global Master KPI Grid (France MAD) -->
+    <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+      <!-- KPI 1: Agences Partenaires -->
+      <div class="glass-panel master-kpi gold" (click)="selectedStatusFilter = 'ALL'; applyFilter()">
+        <div class="kpi-header-row">
+          <span class="kpi-title">Agences Partenaires (Maroc)</span>
+          <i class="fa-solid fa-building-shield kpi-icon"></i>
+        </div>
+        <div class="kpi-val">{{ kpis.totalTenants }}</div>
+        <div class="kpi-sub green-text">
+          <i class="fa-solid fa-circle-check"></i> {{ kpis.activeTenants }} Actives • {{ kpis.trialTenants }} En Essai
+        </div>
+      </div>
+
+      <!-- KPI 2: MRR Global (Revenu Récurrent Mensuel en MAD) -->
+      <div class="glass-panel master-kpi green" (click)="openFinanceModal('subscription')">
+        <div class="kpi-header-row">
+          <span class="kpi-title">MRR Global Abonnements</span>
+          <i class="fa-solid fa-sack-dollar kpi-icon"></i>
+        </div>
+        <div class="kpi-val">{{ kpis.totalMrr | number:'1.0-0' }} <span class="kpi-unit">MAD /mois</span></div>
+        <div class="kpi-sub green-text">
+          <i class="fa-solid fa-chart-line"></i> ARR Projeté : {{ (kpis.totalMrr * 12) | number:'1.0-0' }} MAD
+        </div>
+      </div>
+
+      <!-- KPI 3: Flotte Globale Déployée -->
+      <div class="glass-panel master-kpi blue">
+        <div class="kpi-header-row">
+          <span class="kpi-title">Flotte Globale Déployée</span>
+          <i class="fa-solid fa-car kpi-icon"></i>
+        </div>
+        <div class="kpi-val">{{ kpis.totalVehicles }} <span class="kpi-unit">Véhicules</span></div>
+        <div class="kpi-sub blue-text">
+          <i class="fa-solid fa-gauge-high"></i> Parc automobile sous contrat
+        </div>
+      </div>
+
+      <!-- KPI 4: Contrats & Réservations Plateforme -->
+      <div class="glass-panel master-kpi purple" (click)="openFinanceModal('revenue')">
+        <div class="kpi-header-row">
+          <span class="kpi-title">Volume Réservations SaaS</span>
+          <i class="fa-solid fa-file-invoice-dollar kpi-icon"></i>
+        </div>
+        <div class="kpi-val">{{ kpis.totalReservations }} <span class="kpi-unit">Contrats</span></div>
+        <div class="kpi-sub purple-text">
+          <i class="fa-solid fa-bolt"></i> Commissions est. : {{ (kpis.totalPlatformRevenue * 0.1) | number:'1.0-0' }} MAD
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- SEARCH & FILTER BAR (EXACT DESIGN DU SCREENSHOT)                  -->
+    <!-- ================================================================= -->
+    <div class="glass-panel filter-panel" style="padding: 16px 24px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; border-radius: 16px;">
+      <div style="display: flex; gap: 16px; flex: 1; align-items: center;">
+        <div class="search-input-box" style="position: relative; flex: 1; max-width: 440px;">
+          <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 12px; color: #94a3b8;"></i>
+          <input 
+            type="text" 
+            class="form-control" 
+            [(ngModel)]="searchQuery" 
+            (input)="applyFilter()" 
+            placeholder="Rechercher par nom d'agence, ville, sous-domaine, SIRET..." 
+            style="padding-left: 40px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; color: #fff;">
+        </div>
+
+        <div class="status-filters-pills">
+          <button 
+            class="status-pill" 
+            [class.active]="selectedStatusFilter === 'ALL'" 
+            (click)="selectedStatusFilter = 'ALL'; applyFilter()">
+            Toutes ({{ tenants.length }})
+          </button>
+          
+          <button 
+            class="status-pill status-pill-active" 
+            [class.active]="selectedStatusFilter === 'ACTIVE'" 
+            (click)="selectedStatusFilter = 'ACTIVE'; applyFilter()">
+            🟢 Actives
+          </button>
+          
+          <button 
+            class="status-pill status-pill-trial" 
+            [class.active]="selectedStatusFilter === 'TRIAL'" 
+            (click)="selectedStatusFilter = 'TRIAL'; applyFilter()">
+            🟣 Essai
+          </button>
+          
+          <button 
+            class="status-pill status-pill-suspended" 
+            [class.active]="selectedStatusFilter === 'SUSPENDED'" 
+            (click)="selectedStatusFilter = 'SUSPENDED'; applyFilter()">
+            🔴 Suspendues
+          </button>
+        </div>
+      </div>
+
+      <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 700; white-space: nowrap;">
+        {{ filteredTenants.length }} Agence(s) affichée(s)
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- MASTER TENANTS TABLE (EXACT DESIGN DU SCREENSHOT - MAD)           -->
+    <!-- ================================================================= -->
+    <div class="glass-panel main-table-panel" style="padding: 24px; border-radius: 16px; margin-bottom: 28px;">
+      <div class="custom-table-container">
+        <table class="custom-table master-table">
+          <thead>
+            <tr>
+              <th>AGENCE DE LOCATION</th>
+              <th>VILLE & CONTACT</th>
+              <th>QUOTA VÉHICULES</th>
+              <th>TARIF MENSUEL</th>
+              <th>STATUT ABONNEMENT</th>
+              <th>GÉRANT ADMINISTRATEUR</th>
+              <th>ACTIONS DE CONTRÔLE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of filteredTenants">
+              <!-- Colonne 1: Agence & Sous-domaine France -->
+              <td>
+                <div style="font-weight: 800; font-size: 1.05rem; color: #ffffff;">{{ t.name }}</div>
+                <div style="font-size: 0.82rem; color: #60a5fa; font-family: monospace; margin-top: 2px;">
+                  <i class="fa-solid fa-globe"></i> {{ t.subdomain }}.rentflow.fr
+                </div>
+                <div *ngIf="t.iceNumber" style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">
+                  SIRET : {{ t.iceNumber }}
+                </div>
+              </td>
+
+              <!-- Colonne 2: Ville & Téléphone -->
+              <td>
+                <div style="font-weight: 700; color: #f1f5f9; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-location-dot" style="color: #f59e0b;"></i> {{ t.city || 'Casablanca' }}
+                </div>
+                <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">{{ t.phone }}</div>
+              </td>
+
+              <!-- Colonne 3: Quota & Prix par Véhicule -->
+              <td>
+                <div style="font-size: 0.9rem; color: #38bdf8; font-weight: 800;">
+                  <i class="fa-solid fa-car"></i> {{ t.vehicleCount }} / {{ t.maxVehicles }} Véhicules
+                </div>
+                <div *ngIf="t.pricePerVehicle" style="font-size: 0.75rem; color: #94a3b8; margin-top: 3px;">
+                  ({{ t.pricePerVehicle }} MAD / voiture / mois)
+                </div>
+              </td>
+
+              <!-- Colonne 4: Tarif en MAD & Expiration -->
+              <td>
+                <div style="font-weight: 800; color: #34d399; font-size: 1.05rem;">
+                  {{ t.monthlyPrice | number:'1.0-0' }} MAD <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 400;">/mois</span>
+                </div>
+                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">Exp: {{ t.subscriptionEnd || '2027-01-01' }}</div>
+              </td>
+
+              <!-- Colonne 5: Statut -->
+              <td>
+                <span *ngIf="t.subscriptionStatus === 'ACTIVE'" class="badge badge-DISPONIBLE">🟢 ACTIVE</span>
+                <span *ngIf="t.subscriptionStatus === 'TRIAL'" class="badge badge-RESERVE">🟣 ESSAI GRATUIT</span>
+                <span *ngIf="t.subscriptionStatus === 'SUSPENDED'" class="badge badge-BLOQUE_LITIGE">🔴 SUSPENDUE</span>
+                <span *ngIf="t.subscriptionStatus === 'EXPIRED'" class="badge badge-EN_MAINTENANCE">🟡 EXPIRÉE</span>
+              </td>
+
+              <!-- Colonne 6: Gérant -->
+              <td>
+                <div style="font-weight: 600; color: #f8fafc;">{{ t.adminFullName || 'Jean-Marc Dupont' }}</div>
+                <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">
+                  <i class="fa-solid fa-user"></i> {{ t.adminUsername || 'admin' }}
+                </div>
+              </td>
+
+              <!-- Colonne 7: Actions de Contrôle -->
+              <td>
+                <div class="action-buttons-group">
+                  <!-- Bouton Accéder (Impersonation) -->
+                  <button class="btn btn-impersonate btn-xs" (click)="impersonateAgency(t)" title="Se connecter dans l'agence">
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i> Accéder
+                  </button>
+
+                  <!-- Bouton Paramètres Quota -->
+                  <button class="btn btn-secondary btn-xs" (click)="openEditModal(t)" title="Gérer le tarif & quotas">
+                    <i class="fa-solid fa-sliders"></i>
+                  </button>
+
+                  <!-- Bouton Pause / Play Statut -->
+                  <button *ngIf="t.subscriptionStatus === 'ACTIVE'" class="btn btn-warning-soft btn-xs" (click)="toggleTenantStatus(t, 'SUSPENDED')" title="Suspendre l'agence">
+                    <i class="fa-solid fa-pause"></i>
+                  </button>
+                  <button *ngIf="t.subscriptionStatus === 'SUSPENDED'" class="btn btn-success-soft btn-xs" (click)="toggleTenantStatus(t, 'ACTIVE')" title="Réactiver l'agence">
+                    <i class="fa-solid fa-play"></i>
+                  </button>
+
+                  <!-- Bouton Supprimer -->
+                  <button class="btn btn-danger-soft btn-xs" (click)="deleteAgency(t)" title="Supprimer définitivement">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="filteredTenants.length === 0">
+              <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">
+                <i class="fa-solid fa-building-circle-xmark" style="font-size: 2.2rem; margin-bottom: 12px; color: #64748b; display: block;"></i>
+                <div style="font-weight: 700; color: #e2e8f0; font-size: 1rem;">Aucune agence trouvée</div>
+                <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Modifiez les filtres ou ajoutez une nouvelle agence.</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Live Platform Activity Feed (France MAD) -->
+    <div class="glass-panel feed-panel" style="padding: 20px 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div style="font-weight: 800; font-size: 1.05rem; color: #ffffff; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-wave-square" style="color: #10b981;"></i> Flux en Direct des Dernières Réservations SaaS (Maroc)
+        </div>
+        <span style="font-size: 0.75rem; color: #10b981; font-weight: 800; background: rgba(16, 185, 129, 0.15); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.3);">
+          ● LIVE STREAM
+        </span>
+      </div>
+
+      <div class="activity-feed-list">
+        <div *ngFor="let a of recentActivity" class="activity-feed-item">
+          <div class="activity-feed-left">
+            <div class="activity-avatar">
+              <i class="fa-solid fa-car-side"></i>
+            </div>
+            <div>
+              <div class="activity-client-name">
+                {{ a.clientName }} <span class="activity-tenant-tag">• chez {{ a.tenantName }}</span>
+              </div>
+              <div class="activity-details">
+                <i class="fa-solid fa-car"></i> {{ a.vehicle }} &nbsp;•&nbsp; <i class="fa-solid fa-calendar-days"></i> {{ a.days }} jours de location &nbsp;•&nbsp; <i class="fa-solid fa-clock"></i> {{ a.time }}
+              </div>
+            </div>
+          </div>
+
+          <div class="activity-feed-right">
+            <div class="activity-amount">{{ a.totalAmount | number:'1.0-0' }} MAD</div>
+            <div class="activity-commission">Part Plateforme (10%) : {{ a.commission | number:'1.0-0' }} MAD</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: ONBOARDING & PROVISIONING NOUVELLE AGENCE (FRANCE)                 -->
+  <!-- ========================================================================= -->
+  <div *ngIf="activeTab === 'onboard'" class="tab-content fade-in">
+    <!-- Generated Credentials Box (Passport Card France) -->
+    <!-- Generated Credentials Box (Passport Card Maroc) -->
+    <div *ngIf="generatedCredentials" class="glass-panel credentials-card fade-in" style="margin-bottom: 28px;">
+      <div class="credentials-card-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-shield-halved" style="color: #60a5fa; font-size: 1.4rem;"></i>
+          <div>
+            <div style="font-weight: 800; font-size: 1.15rem; color: #ffffff;">Passeport d'Accès Généré avec Succès (Maroc)</div>
+            <div style="font-size: 0.85rem; color: #cbd5e1;">Communiquez ces identifiants sécurisés au gérant de la nouvelle agence de location.</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-xs" (click)="dismissCredentials()">&times; Fermer</button>
+      </div>
+
+      <div class="credentials-grid">
+        <div class="credential-item">
+          <span class="cred-label">Agence Partenaire</span>
+          <span class="cred-value">{{ generatedCredentials.agencyName }}</span>
+        </div>
+        <div class="credential-item">
+          <span class="cred-label">URL Sous-Domaine</span>
+          <span class="cred-value highlight-blue">{{ generatedCredentials.subdomainUrl }}</span>
+        </div>
+        <div class="credential-item">
+          <span class="cred-label">Identifiant Gérant</span>
+          <span class="cred-value highlight-gold">{{ generatedCredentials.adminUsername }}</span>
+        </div>
+        <div class="credential-item">
+          <span class="cred-label">Mot de Passe Initial</span>
+          <span class="cred-value highlight-green">{{ generatedCredentials.tempPassword }}</span>
+        </div>
+        <div class="credential-item">
+          <span class="cred-label">Tarification & Quota</span>
+          <span class="cred-value">{{ generatedCredentials.monthlyPrice }} MAD/mois (Quota {{ generatedCredentials.maxVehicles }} véhicules)</span>
+        </div>
+        <div class="credential-item">
+          <span class="cred-label">État de Mise en Service</span>
+          <span class="cred-value text-green">🟢 Actif Instantanément</span>
+        </div>
+      </div>
+
+      <div class="credentials-actions">
+        <button class="btn btn-primary" (click)="copyCredentials()" style="background: #2563eb; color: #fff;">
+          <i class="fa-solid fa-copy"></i> Copier les Informations Complètes
+        </button>
+      </div>
+    </div>
+
+    <!-- Provisioning Wizard Form (Maroc) -->
+    <div class="glass-panel" style="padding: 32px; max-width: 900px; margin: 0 auto;">
+      <div style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 16px; margin-bottom: 24px;">
+        <h2 style="font-size: 1.4rem; color: #ffffff; display: flex; align-items: center; gap: 12px;">
+          <i class="fa-solid fa-building-circle-check" style="color: #fbbf24;"></i> Provisionner une Nouvelle Agence (Maroc)
+        </h2>
+        <p style="font-size: 0.9rem; color: #94a3b8; margin-top: 4px;">
+          Cette opération crée l'espace multi-tenant dédié, initialise le sous-domaine `.rentflow.ma` et configure les accès gérant avec tarification personnalisée par voiture.
+        </p>
+      </div>
+
+      <form (ngSubmit)="submitOnboarding()">
+        <!-- SECTION 1: Identité Agence Maroc -->
+        <div class="form-section-title">1. IDENTIFICATION & COORDONNÉES DE L'ÉTABLISSEMENT (MAROC)</div>
+        
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Raison Sociale / Nom Commercial *</label>
+          <input type="text" class="form-control" [(ngModel)]="newAgency.name" (blur)="onSubdomainAutoFill()" (input)="onSubdomainAutoFill()" name="onboardName" required placeholder="ex: Atlas Auto Casablanca">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label">Ville Principale</label>
+            <select class="form-control" [(ngModel)]="newAgency.city" name="onboardCity">
+              <option *ngFor="let c of cities" [value]="c">{{ c }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">N° Téléphone</label>
+            <input type="text" class="form-control" [(ngModel)]="newAgency.phone" name="onboardPhone" placeholder="+212 5 22 00 00 00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Professionnel</label>
+            <input type="email" class="form-control" [(ngModel)]="newAgency.email" name="onboardEmail" placeholder="contact@agence.ma">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label">ICE (Identifiant Commun de l'Entreprise)</label>
+            <input type="text" class="form-control" [(ngModel)]="newAgency.iceNumber" name="onboardIce" placeholder="001234567000089">
+          </div>
+          <div class="form-group">
+            <label class="form-label">RCS (Registre du Commerce)</label>
+            <input type="text" class="form-control" [(ngModel)]="newAgency.rcNumber" name="onboardRc" placeholder="RC Casablanca 456789">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label class="form-label">Adresse Complète</label>
+          <input type="text" class="form-control" [(ngModel)]="newAgency.address" name="onboardAddress" placeholder="Boulevard d'Anfa, Casablanca">
+        </div>
+
+        <!-- SECTION 2: TARIFICATION PAR VÉHICULE & QUOTA -->
+        <div class="form-section-title">2. TARIFICATION PAR VÉHICULE & QUOTA DE L'AGENCE</div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 16px; margin-bottom: 28px; background: rgba(0, 0, 0, 0.25); padding: 20px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06);">
+          <div class="form-group">
+            <label class="form-label">Quota Max de Véhicules *</label>
+            <input type="number" class="form-control" [(ngModel)]="newAgency.maxVehicles" (input)="onPricingInputChange()" name="onboardMaxVehicles" min="1" required placeholder="ex: 30">
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">Capacité maximale de la flotte</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tarif par Voiture / Mois (MAD) *</label>
+            <input type="number" class="form-control" [(ngModel)]="newAgency.pricePerVehicle" (input)="onPricingInputChange()" name="onboardPricePerVeh" min="1" required placeholder="ex: 100">
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">Prix unitaire par auto</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Prix Total Facturé Mensuel (MAD / mois)</label>
+            <input type="number" class="form-control" [(ngModel)]="newAgency.monthlyPrice" name="onboardMonthlyPrice" style="color: #34d399; font-weight: 800; font-size: 1.15rem;" required>
+            <div style="font-size: 0.75rem; color: #34d399; font-weight: 600; margin-top: 4px;">
+              = {{ newAgency.maxVehicles }} voitures &times; {{ newAgency.pricePerVehicle }} MAD = {{ newAgency.monthlyPrice }} MAD /mois
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Compte Gérant Initial -->
+        <div class="form-section-title">3. CRÉATION DU COMPTE GÉRANT ADMINISTRATEUR</div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 28px;">
+          <div class="form-group">
+            <label class="form-label">Nom Complet du Gérant *</label>
+            <input type="text" class="form-control" [(ngModel)]="newAgency.adminFullName" (blur)="onSubdomainAutoFill()" name="adminFullName" required placeholder="ex: Jean-Marc Dupont">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nom d'Utilisateur (Login) *</label>
+            <input type="text" class="form-control" [(ngModel)]="newAgency.adminUsername" name="adminUsername" required placeholder="ex: jm_dupont">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mot de Passe Initial *</label>
+            <input type="password" class="form-control" [(ngModel)]="newAgency.adminPassword" name="adminPassword" required placeholder="Mot de passe sécurisé">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 14px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px;">
+          <button type="button" class="btn btn-secondary" (click)="setTab('dashboard')">Retour à la Vue Analytique</button>
+          <button type="submit" class="btn btn-primary-gold" style="padding: 14px 28px; font-size: 1rem;">
+            <i class="fa-solid fa-check"></i> Provisionner l'Agence & Générer le Passeport
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: ANNUAIRE UTILISATEURS & GÉRANTS SAAS AU MAROC                      -->
+  <!-- ========================================================================= -->
+  <div *ngIf="activeTab === 'users'" class="tab-content fade-in">
+    <div class="glass-panel" style="padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h2 style="font-size: 1.3rem; color: #ffffff; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-users-gear" style="color: #60a5fa;"></i> Annuaire Central des Administrateurs & Gérants (Maroc)
+          </h2>
+          <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Supervision de tous les comptes de connexion des agences partenaires au Maroc.</p>
+        </div>
+
+        <div style="position: relative; width: 340px;">
+          <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 10px; color: #94a3b8;"></i>
+          <input 
+            type="text" 
+            class="form-control" 
+            [(ngModel)]="userSearchQuery" 
+            (input)="applyUserFilter()" 
+            placeholder="Rechercher gérant, agence, email..." 
+            style="padding-left: 36px;">
+        </div>
+      </div>
+
+      <div class="users-grid">
+        <div *ngFor="let u of filteredUsers" class="user-card-item" [class.user-disabled]="!u.active">
+          <div class="user-card-top">
+            <div class="user-avatar-circle" [class.superadmin-avatar]="u.role === 'SUPER_ADMIN'">
+              {{ u.role === 'SUPER_ADMIN' ? 'HQ' : u.fullName.substring(0, 2).toUpperCase() }}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div class="user-card-name">{{ u.fullName }}</div>
+              <div class="user-card-role">
+                <span *ngIf="u.role === 'SUPER_ADMIN'" class="role-badge-super">MASTER CONTROLLER HQ</span>
+                <span *ngIf="u.role !== 'SUPER_ADMIN'" class="role-badge-admin">GÉRANT D'AGENCE</span>
+              </div>
+            </div>
+            <span class="user-status-pill" [class.status-active]="u.active" [class.status-inactive]="!u.active">
+              {{ u.active ? 'Actif' : 'Suspendu' }}
+            </span>
+          </div>
+
+          <div class="user-card-body">
+            <div class="user-info-row">
+              <i class="fa-solid fa-building"></i>
+              <span>{{ u.agencyName }}</span>
+            </div>
+            <div class="user-info-row">
+              <i class="fa-solid fa-user"></i>
+              <span class="font-mono">{{ u.username }}</span>
+            </div>
+            <div class="user-info-row">
+              <i class="fa-solid fa-envelope"></i>
+              <span>{{ u.email }}</span>
+            </div>
+            <div class="user-info-row">
+              <i class="fa-solid fa-phone"></i>
+              <span>{{ u.phone }}</span>
+            </div>
+          </div>
+
+          <div class="user-card-actions">
+            <button class="btn btn-secondary btn-xs" (click)="openEditUser(u)">
+              <i class="fa-solid fa-pen-to-square"></i> Modifier
+            </button>
+            <button 
+              *ngIf="u.role !== 'SUPER_ADMIN'" 
+              class="btn btn-xs" 
+              [class.btn-warning-soft]="u.active" 
+              [class.btn-success-soft]="!u.active" 
+              (click)="toggleUserStatus(u)">
+              {{ u.active ? 'Suspendre' : 'Activer' }}
+            </button>
+            <button 
+              *ngIf="u.role !== 'SUPER_ADMIN'" 
+              class="btn btn-danger-soft btn-xs" 
+              (click)="deleteUser(u)">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="filteredUsers.length === 0" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #94a3b8;">
+          <i class="fa-solid fa-user-slash" style="font-size: 2.2rem; margin-bottom: 12px; color: #64748b; display: block;"></i>
+          <div style="font-weight: 700; color: #e2e8f0; font-size: 1rem;">Aucun gérant ou administrateur trouvé</div>
+          <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Les comptes d'accès créés lors du provisionnement d'agences apparaîtront ici.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: MODIFIER AGENCE, QUOTAS & PRIX PAR VÉHICULE                      -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" [class.active]="isEditModalOpen" *ngIf="selectedTenant">
+    <div class="modal-dialog glass-panel" style="max-width: 560px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+        <h2 style="font-size: 1.25rem; color: #ffffff; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-sliders" style="color: #60a5fa;"></i> Configurer Tarification : {{ selectedTenant.name }}
+        </h2>
+        <button style="background: none; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;" (click)="closeEditModal()">&times;</button>
+      </div>
+
+      <form (ngSubmit)="saveEditAgency()">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label">Quota Véhicules</label>
+            <input type="number" class="form-control" [(ngModel)]="selectedTenant.maxVehicles" (input)="onEditPricingInputChange()" name="editMaxVehicles" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prix / Voiture (MAD)</label>
+            <input type="number" class="form-control" [(ngModel)]="selectedTenant.pricePerVehicle" (input)="onEditPricingInputChange()" name="editPricePerVeh">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prix Total Facturé (MAD)</label>
+            <input type="number" class="form-control" [(ngModel)]="selectedTenant.monthlyPrice" name="editMonthlyPrice" style="color: #34d399; font-weight: 800;" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+          <div class="form-group">
+            <label class="form-label">Statut de la Souscription</label>
+            <select class="form-control" [(ngModel)]="selectedTenant.subscriptionStatus" name="editStatus">
+              <option value="ACTIVE">🟢 ACTIVE</option>
+              <option value="TRIAL">🟣 ESSAI GRATUIT</option>
+              <option value="SUSPENDED">🔴 SUSPENDUE</option>
+              <option value="EXPIRED">🟡 EXPIRÉE</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date d'Échéance</label>
+            <input type="date" class="form-control" [(ngModel)]="selectedTenant.subscriptionEnd" name="editEnd">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
+          <button type="button" class="btn btn-secondary" (click)="closeEditModal()">Fermer</button>
+          <button type="submit" class="btn btn-primary-gold"><i class="fa-solid fa-floppy-disk"></i> Enregistrer les Modifications</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: MODIFIER COMPTE GÉRANT                                          -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" [class.active]="isEditUserModalOpen" *ngIf="selectedUser">
+    <div class="modal-dialog glass-panel" style="max-width: 500px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+        <h2 style="font-size: 1.25rem; color: #ffffff; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-user-pen" style="color: #60a5fa;"></i> Modifier Utilisateur : {{ selectedUser.fullName }}
+        </h2>
+        <button style="background: none; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;" (click)="closeEditUser()">&times;</button>
+      </div>
+
+      <form (ngSubmit)="saveEditUser()">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Nom Complet</label>
+          <input type="text" class="form-control" [(ngModel)]="selectedUser.fullName" name="userEditName" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" [(ngModel)]="selectedUser.email" name="userEditEmail" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Téléphone</label>
+            <input type="text" class="form-control" [(ngModel)]="selectedUser.phone" name="userEditPhone">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label">Réinitialiser le Mot de Passe (laisser vide si inchangé)</label>
+          <input type="password" class="form-control" [(ngModel)]="editUserPassword" name="userEditPass" placeholder="Nouveau mot de passe">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
+          <button type="button" class="btn btn-secondary" (click)="closeEditUser()">Fermer</button>
+          <button type="submit" class="btn btn-primary-gold"><i class="fa-solid fa-check"></i> Sauvegarder</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 3: DÉTAIL FINANCES & COMMISSIONS (MAD)                             -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" [class.active]="isFinanceModalOpen">
+    <div class="modal-dialog glass-panel" style="max-width: 600px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+        <h2 style="font-size: 1.25rem; color: #ffffff; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-chart-pie" style="color: #10b981;"></i> Analyse Financière SaaS & Commissions (MAD)
+        </h2>
+        <button style="background: none; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;" (click)="closeFinanceModal()">&times;</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 16px;">
+          <div style="font-size: 0.85rem; color: #34d399; font-weight: 700;">REVENU MENSUEL RÉCURRENT (MRR)</div>
+          <div style="font-size: 1.8rem; font-weight: 800; color: #ffffff; margin-top: 4px;">{{ kpis.totalMrr | number:'1.0-0' }} MAD <span style="font-size: 0.9rem; color: #94a3b8;">/mois</span></div>
+          <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Calculé sur {{ kpis.activeTenants }} agences actives avec abonnement valide.</div>
+        </div>
+
+        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 16px;">
+          <div style="font-size: 0.85rem; color: #818cf8; font-weight: 700;">COMMISSIONS ESTIMÉES SUR CONTRATS (10%)</div>
+          <div style="font-size: 1.8rem; font-weight: 800; color: #ffffff; margin-top: 4px;">{{ (kpis.totalPlatformRevenue * 0.1) | number:'1.0-0' }} MAD</div>
+          <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Basé sur un volume brut contracté de {{ kpis.totalPlatformRevenue | number:'1.0-0' }} MAD.</div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+        <button class="btn btn-secondary" (click)="closeFinanceModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>

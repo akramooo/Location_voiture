@@ -1,0 +1,168 @@
+<!-- Main ERP App Layout (Only for protected internal routes) -->
+<div class="app-layout" *ngIf="isInternalRoute()">
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon" [style.background]="isSuperAdmin() ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'">
+        <i class="fa-solid" [class.fa-crown]="isSuperAdmin()" [class.fa-car-side]="!isSuperAdmin()"></i>
+      </div>
+      <div class="brand-info">
+        <span class="brand-name">RentFlow</span>
+        <span class="brand-tag" [style.color]="isSuperAdmin() ? '#fbbf24' : '#60a5fa'">
+          {{ isSuperAdmin() ? '👑 Master SaaS ' : 'Édition Agence v1.0' }}
+        </span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- ================================================================= -->
+      <!-- 1. NAVIGATION SUPER ADMIN (Visible uniquement pour Super Admin)   -->
+      <!-- ================================================================= -->
+      <ng-container *ngIf="isSuperAdmin()">
+        <div class="nav-section-title" style="color: #fbbf24; font-weight: 800; letter-spacing: 0.08em;">
+          SUPERVISION SAAS
+        </div>
+        
+        <a routerLink="/super-admin" [queryParams]="{ tab: 'dashboard' }" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" class="nav-item superadmin-nav-item">
+          <i class="fa-solid fa-chart-pie" style="color: #fbbf24;"></i>
+          <span>Vue Analytique & Flotte</span>
+        </a>
+
+        <a routerLink="/super-admin" [queryParams]="{ tab: 'onboard' }" class="nav-item superadmin-nav-item">
+          <i class="fa-solid fa-building-user" style="color: #fbbf24;"></i>
+          <span>Onboarding Agence</span>
+        </a>
+
+        <a routerLink="/super-admin" [queryParams]="{ tab: 'users' }" class="nav-item superadmin-nav-item">
+          <i class="fa-solid fa-users-gear" style="color: #fbbf24;"></i>
+          <span>Annuaire des Gérants</span>
+        </a>
+      </ng-container>
+
+      <!-- ================================================================= -->
+      <!-- 2. NAVIGATION EXPLOITATION AGENCE (Visible UNIQUEMENT pour les   -->
+      <!--    agences ou quand le Super Admin accède / impersonate une agence) -->
+      <!-- ================================================================= -->
+      <ng-container *ngIf="canViewAgencyMenu()">
+        <div class="nav-section-title">EXPLOITATION AGENCE</div>
+        
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Tableau de Bord</span>
+        </a>
+
+        <a routerLink="/fleet" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-car"></i>
+          <span>Parc & Véhicules</span>
+        </a>
+
+        <a routerLink="/booking" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-calendar-days"></i>
+          <span>Planning Gantt</span>
+        </a>
+
+        <a routerLink="/crm" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-users"></i>
+          <span>CRM & Anti-Fraude</span>
+        </a>
+
+        <div class="nav-section-title">EXPLOITATION & CONTRATS</div>
+
+        <a routerLink="/inspection" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-clipboard-check"></i>
+          <span>Check-In / Out 2D</span>
+        </a>
+
+        <a routerLink="/ocr" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>Scan IA & OCR</span>
+        </a>
+
+        <a routerLink="/billing" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+          <span>Facturation & Caisse</span>
+        </a>
+
+        <a routerLink="/cheques" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-money-check-dollar"></i>
+          <span>Portefeuille Chèques & Cautions</span>
+        </a>
+
+        <a routerLink="/expenses" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-wrench"></i>
+          <span>Dépenses Flotte TCO</span>
+        </a>
+
+        <a routerLink="/radars" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>PV Radars & Amendes ANTAI</span>
+        </a>
+
+        <div class="nav-section-title">SERVICES & OFFRES</div>
+
+        <a routerLink="/pricing" routerLinkActive="active" class="nav-item">
+          <i class="fa-solid fa-tags"></i>
+          <span>Simulateur Tarifs</span>
+        </a>
+      </ng-container>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="avatar" [style.background]="isSuperAdmin() ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'">
+          {{ isSuperAdmin() ? 'HQ' : 'JD' }}
+        </div>
+        <div class="user-details">
+          <div class="user-name">{{ user?.fullName || 'Jean-Marc Dupont' }}</div>
+          <div class="user-role">{{ user?.role === 'SUPER_ADMIN' ? '👑 Super Admin Master' : (user?.role === 'ADMIN_AGENCE' ? 'Gérant Agence' : 'Agent') }}</div>
+        </div>
+      </div>
+      <button class="logout-btn" (click)="logout()" title="Déconnexion">
+        <i class="fa-solid fa-power-off"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Container -->
+  <main class="main-wrapper">
+    <!-- Impersonation Banner -->
+    <div *ngIf="isImpersonated()" style="background: linear-gradient(90deg, #f59e0b 0%, #b45309 100%); color: #0f172a; padding: 12px 24px; font-weight: 800; font-size: 0.88rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); position: sticky; top: 0; z-index: 100;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <i class="fa-solid fa-user-secret" style="font-size: 1.2rem;"></i>
+        <span>MODE CONNEXION AGENCE ACTIF : Vous gérez actuellement l'agence <strong>{{ user?.tenantName }}</strong></span>
+      </div>
+      <button class="btn btn-xs" style="background: #0f172a; color: #fbbf24; font-weight: 800; border-radius: 8px; padding: 7px 16px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;" (click)="exitImpersonation()">
+        <i class="fa-solid fa-arrow-left"></i> Quitter l'Agence & Revenir au Super Admin
+      </button>
+    </div>
+
+    <header class="top-header">
+      <div class="header-left">
+        <div class="tenant-badge" [style.border]="isSuperAdmin() ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(59, 130, 246, 0.3)'">
+          <i class="fa-solid" [class.fa-crown]="isSuperAdmin()" [class.fa-building]="!isSuperAdmin()" [style.color]="isSuperAdmin() ? '#fbbf24' : '#60a5fa'"></i>
+          <span [style.color]="isSuperAdmin() ? '#fbbf24' : '#ffffff'">{{ user?.tenantName || 'RentFlow  Master SaaS' }}</span>
+        </div>
+        <div *ngIf="!isSuperAdmin()" class="ice-badge">SIRET: 802 345 678 00012</div>
+        <div *ngIf="isSuperAdmin()" class="ice-badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">
+          👑 Master Controller HQ
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="header-action-btn">
+          <i class="fa-solid fa-bell"></i>
+          <span class="notification-dot"></span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>
+
+<!-- Public Outlet (Full Screen on Landing / and /login) -->
+<div *ngIf="!isInternalRoute()">
+  <router-outlet></router-outlet>
+</div>

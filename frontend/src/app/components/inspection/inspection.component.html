@@ -1,0 +1,71 @@
+<div class="inspection-component fade-in">
+  <div class="inspection-header" style="margin-bottom: 24px;">
+    <h1 class="page-title">Digital Check-In 2D & Signature Tactile</h1>
+    <p class="page-subtitle">Relevé des dommages sur carrosserie 2D, jauge carburant, photo & contrat PDF sécurisé.</p>
+  </div>
+
+  <div class="inspection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- Box 1: Carrosserie 2D -->
+    <div class="glass-panel" style="padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3><i class="fa-solid fa-car-burst blue-icon"></i> Schéma Carrosserie 2D (Repères de Dommages)</h3>
+        <button class="btn btn-secondary btn-sm" (click)="clearPins()"><i class="fa-solid fa-rotate-left"></i> Effacer</button>
+      </div>
+
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+        Cliquez directement sur le schéma du véhicule ci-dessous pour placer des repères d'impacts ou rayures.
+      </p>
+
+      <div class="car-damage-box" (click)="onCanvasClick($event)" style="position: relative; border: 2px dashed rgba(255,255,255,0.2); border-radius: 12px; height: 260px; display: flex; justify-content: center; align-items: center; cursor: crosshair; background: rgba(0,0,0,0.2);">
+        <img src="https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=600" alt="Car Blueprint" style="max-height: 100%; max-width: 100%; opacity: 0.6; pointer-events: none;">
+        
+        <!-- Pins -->
+        <div *ngFor="let p of pins; let i = index" class="damage-pin" [style.left.%]="p.x" [style.top.%]="p.y" style="position: absolute; width: 22px; height: 22px; background: #ef4444; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; transform: translate(-50%, -50%); border: 2px solid white; box-shadow: 0 0 10px rgba(239,68,68,0.8);">
+          {{ i + 1 }}
+        </div>
+      </div>
+
+      <div style="margin-top: 12px; font-size: 0.85rem; color: #60a5fa; font-weight: 600;">
+        Dommages marqués : {{ pins.length }} point(s) d'impact.
+      </div>
+    </div>
+
+    <!-- Box 2: Form & Signature -->
+    <div class="glass-panel" style="padding: 24px;">
+      <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-file-contract green-icon"></i> Sélection Réservation & Validation</h3>
+
+      <form (ngSubmit)="submitInspection()">
+        <div class="form-group">
+          <label class="form-label">Réservation Concernée</label>
+          <select class="form-control" [(ngModel)]="selectedReservationId" name="selectedReservationId">
+            <option *ngFor="let r of reservations" [value]="r.id">{{ r.reservationNumber }} | {{ r.vehicleName || 'Véhicule' }} - {{ r.clientName || 'Client' }}</option>
+            <option *ngIf="reservations.length === 0" [value]="1">RES-2026-001 | Dacia Logan - Youssef Benani</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Kilométrage Départ (KM)</label>
+            <input type="number" class="form-control" [(ngModel)]="mileage" name="mileage">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Niveau Carburant</label>
+            <select class="form-control" [(ngModel)]="fuelLevel" name="fuelLevel">
+              <option value="PLEIN">100% (Plein)</option>
+              <option value="3/4">75% (3/4)</option>
+              <option value="1/2">50% (1/2)</option>
+              <option value="1/4">25% (1/4)</option>
+              <option value="RESERVE">Réserve</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px;">
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">
+            <i class="fa-solid fa-check-double"></i> Valider et Générer le Contrat PDF
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

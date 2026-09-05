@@ -1,0 +1,108 @@
+<div class="crm-component fade-in">
+  <div class="crm-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+      <h1 class="page-title">CRM Clients & Scoring Anti-Fraude</h1>
+      <p class="page-subtitle">Gestion des fiches clients, scoring de confiance 0-100 et blacklist partagée.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fa-solid fa-user-plus"></i> Nouveau Client
+    </button>
+  </div>
+
+  <div class="glass-panel main-crm-panel" style="padding: 24px;">
+    <div class="custom-table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Nom / Raison Sociale</th>
+            <th>CIN / ICE</th>
+            <th>Permis / Mandat</th>
+            <th>WhatsApp</th>
+            <th>Score de Confiance</th>
+            <th>Statut Blacklist</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of clients" [style.background]="c.blacklisted ? 'rgba(239, 68, 68, 0.08)' : ''">
+            <td><span class="badge" [class.badge-DISPONIBLE]="c.clientType === 'PARTICULIER'" [class.badge-RESERVE]="c.clientType === 'ENTREPRISE'">{{ c.clientType }}</span></td>
+            <td style="font-weight: 700;" [style.color]="c.blacklisted ? '#f87171' : ''">{{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }}</td>
+            <td>{{ c.clientType === 'ENTREPRISE' ? (c.iceNumber + ' (ICE)') : c.cinPassport }}</td>
+            <td>{{ c.clientType === 'ENTREPRISE' ? ('Mandat ' + c.designatedDriverName) : c.driverLicenseNumber }}</td>
+            <td>{{ c.phoneWhatsApp }}</td>
+            <td>
+              <span [style.color]="c.riskScore > 70 ? '#10b981' : '#ef4444'" style="font-weight: 800;">
+                <i class="fa-solid" [class.fa-shield-halved]="c.riskScore > 70" [class.fa-triangle-exclamation]="c.riskScore <= 70"></i> {{ c.riskScore }} / 100
+              </span>
+            </td>
+            <td>
+              <button *ngIf="c.blacklisted" class="btn btn-secondary btn-xs" style="color: #10b981;" (click)="toggleBlacklist(c)"><i class="fa-solid fa-unlock"></i> Débloquer</button>
+              <button *ngIf="!c.blacklisted" class="btn btn-danger btn-xs" (click)="toggleBlacklist(c)"><i class="fa-solid fa-ban"></i> Blacklister</button>
+            </td>
+          </tr>
+          <tr *ngIf="clients.length === 0">
+            <td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">Aucun client enregistré. Cliquez sur "Nouveau Client".</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Angular Add Client Modal Dialog -->
+  <div class="modal-backdrop" [class.active]="isModalOpen">
+    <div class="modal-dialog glass-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-user-plus blue-icon"></i> Ajouter un Nouveau Client</h2>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
+      </div>
+
+      <form (ngSubmit)="submitClient()">
+        <div class="form-group">
+          <label class="form-label">Type de Client</label>
+          <select class="form-control" [(ngModel)]="newClient.clientType" name="clientType">
+            <option value="PARTICULIER">PARTICULIER</option>
+            <option value="ENTREPRISE">ENTREPRISE</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Prénom / Raison Sociale</label>
+            <input type="text" class="form-control" [(ngModel)]="newClient.firstName" name="firstName" required placeholder="ex: Youssef ou SARL Transport">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nom de famille</label>
+            <input type="text" class="form-control" [(ngModel)]="newClient.lastName" name="lastName" placeholder="ex: Benani">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">CIN / Passeport / ICE</label>
+            <input type="text" class="form-control" [(ngModel)]="newClient.cinPassport" name="cinPassport" required placeholder="ex: BE897654">
+          </div>
+          <div class="form-group">
+            <label class="form-label">N° Permis de Conduire</label>
+            <input type="text" class="form-control" [(ngModel)]="newClient.driverLicenseNumber" name="driverLicenseNumber" required placeholder="ex: 05/123456">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Téléphone WhatsApp</label>
+            <input type="text" class="form-control" [(ngModel)]="newClient.phoneWhatsApp" name="phoneWhatsApp" required placeholder="+212 661 000000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" [(ngModel)]="newClient.email" name="email" placeholder="client@gmail.com">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Créer Fiche Client</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

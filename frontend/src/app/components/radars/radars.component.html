@@ -1,0 +1,93 @@
+<div class="radars-component fade-in">
+  <div class="radars-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+      <h1 class="page-title">Registre des PV Radars & Infractions</h1>
+      <p class="page-subtitle">Gestion des contraventions et réassignation légale au client conducteur.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fa-solid fa-plus"></i> Déclarer une Infraction
+    </button>
+  </div>
+
+  <div class="glass-panel main-radars-panel" style="padding: 24px;">
+    <div class="custom-table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>N° PV Radar</th>
+            <th>Véhicule</th>
+            <th>Lieu / Date</th>
+            <th>Montant Infraction</th>
+            <th>Client Réassigné</th>
+            <th>Statut / Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of fines">
+            <td><span style="font-weight: 700;">{{ f.ticketNumber }}</span></td>
+            <td>{{ f.vehicleName || 'N/A' }}</td>
+            <td>{{ f.violationLocation || 'N/A' }}</td>
+            <td style="font-weight: 700; color: #ef4444;">{{ f.fineAmount | number:'1.2-2' }} MAD</td>
+            <td>{{ f.clientName || 'Non réassigné' }}</td>
+            <td>
+              <span *ngIf="f.reallocated" class="badge badge-RESERVE">Réassigné au Client</span>
+              <button *ngIf="!f.reallocated" class="btn btn-secondary btn-xs" (click)="reallocateFine(f)">Réassigner</button>
+            </td>
+          </tr>
+          <tr *ngIf="fines.length === 0">
+            <td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">Aucune infraction radar déclarée. Cliquez sur "Déclarer une Infraction".</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Angular Add Fine Modal Dialog -->
+  <div class="modal-backdrop" [class.active]="isModalOpen">
+    <div class="modal-dialog glass-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-triangle-exclamation amber-icon"></i> Déclarer une Infraction / PV Radar</h2>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
+      </div>
+
+      <form (ngSubmit)="submitFine()">
+        <div class="form-group">
+          <label class="form-label">N° Avis d'Infraction / PV</label>
+          <input type="text" class="form-control" [(ngModel)]="newFine.ticketNumber" name="ticketNumber" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Sélectionner le Véhicule Concerné</label>
+          <select class="form-control" [(ngModel)]="newFine.vehicleId" name="vehicleId">
+            <option *ngFor="let v of vehicles" [value]="v.id">{{ v.brand }} {{ v.model }} ({{ v.registrationNumber }})</option>
+            <option *ngIf="vehicles.length === 0" [value]="1">Dacia Logan (12345-A-6)</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Lieu de l'Infraction</label>
+            <input type="text" class="form-control" [(ngModel)]="newFine.violationLocation" name="violationLocation" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Montant Contravention (MAD)</label>
+            <input type="number" class="form-control" [(ngModel)]="newFine.fineAmount" name="fineAmount" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Réassigner au Conducteur Client</label>
+          <select class="form-control" [(ngModel)]="newFine.clientId" name="clientId">
+            <option *ngFor="let c of clients" [value]="c.id">{{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }} ({{ c.cinPassport || c.iceNumber }})</option>
+            <option *ngIf="clients.length === 0" [value]="1">Youssef Benani (BE897654)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Déclarer & Réassigner</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

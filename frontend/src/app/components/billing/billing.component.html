@@ -1,0 +1,96 @@
+<div class="billing-component fade-in">
+  <div class="billing-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+      <h1 class="page-title">Facturation & Caisse Journalière</h1>
+      <p class="page-subtitle">Conformité  (SIRET, TVA 20%, Mention Légales) et clôture de shift agent.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fa-solid fa-cash-register"></i> Clôture de Caisse
+    </button>
+  </div>
+
+  <div class="glass-panel main-billing-panel" style="padding: 24px;">
+    <h3 class="panel-title" style="margin-bottom: 16px;"><i class="fa-solid fa-file-invoice blue-icon"></i> Factures Émises Conformes</h3>
+
+    <div class="custom-table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>N° Facture</th>
+            <th>Client / SIRET</th>
+            <th>Total HT</th>
+            <th>TVA (20%)</th>
+            <th>Total TTC</th>
+            <th>Statut</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let inv of invoices">
+            <td><span style="font-weight: 700; color: #60a5fa;">{{ inv.invoiceNumber }}</span></td>
+            <td>
+              <div>{{ inv.clientName || 'Client Standard' }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">SIRET Client: {{ inv.iceClient || 'N/A' }}</div>
+            </td>
+            <td>{{ inv.totalHT | number:'1.2-2' }} MAD</td>
+            <td>{{ inv.totalTVA | number:'1.2-2' }} MAD</td>
+            <td style="font-weight: 800; color: #34d399;">{{ inv.totalTTC | number:'1.2-2' }} MAD</td>
+            <td><span class="badge badge-DISPONIBLE">{{ inv.paymentStatus || 'PAYEE' }}</span></td>
+            <td>
+              <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" (click)="printInvoice(inv)">
+                <i class="fa-solid fa-print"></i> PDF Facture
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="invoices.length === 0">
+            <td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">Aucune facture émise pour le moment.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Angular Cash Register Modal Dialog -->
+  <div class="modal-backdrop" [class.active]="isModalOpen">
+    <div class="modal-dialog glass-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-cash-register green-icon"></i> Clôture de Caisse Journalière</h2>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
+      </div>
+
+      <form (ngSubmit)="submitCashRegister()">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Fond de Caisse Initial (MAD)</label>
+            <input type="number" class="form-control" [(ngModel)]="cashRegister.startingCash" name="startingCash" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Espèces Réellement en Caisse (MAD)</label>
+            <input type="number" class="form-control" [(ngModel)]="cashRegister.actualCashInHand" name="actualCashInHand" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Total Encaissé Espèces (MAD)</label>
+            <input type="number" class="form-control" [(ngModel)]="cashRegister.totalCashReceived" name="totalCashReceived" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Total Encaissé TPE / Carte (MAD)</label>
+            <input type="number" class="form-control" [(ngModel)]="cashRegister.totalTpeReceived" name="totalTpeReceived" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Observations / Notes de Shift</label>
+          <input type="text" class="form-control" [(ngModel)]="cashRegister.notes" name="notes">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-lock"></i> Valider & Clôturer la Caisse</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

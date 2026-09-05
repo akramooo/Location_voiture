@@ -1,0 +1,86 @@
+<div class="booking-component fade-in">
+  <div class="booking-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+      <h1 class="page-title">Planning Gantt Interactif</h1>
+      <p class="page-subtitle">Vue d'ensemble du parc automobile avec détection des conflits de disponibilité.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fa-solid fa-calendar-plus"></i> Nouvelle Réservation
+    </button>
+  </div>
+
+  <div class="glass-panel main-gantt-panel" style="padding: 24px;">
+    <div class="gantt-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3><i class="fa-solid fa-calendar-week blue-icon"></i> Mois de Août / Septembre 2026</h3>
+    </div>
+
+    <div class="gantt-container" id="gantt-view-holder">
+      <div class="gantt-header">
+        <div class="gantt-col-vehicle">Véhicule / Immat</div>
+        <div class="gantt-timeline-header">
+          <div *ngFor="let d of days" class="gantt-day-slot" [style.color]="d === 25 ? '#3b82f6' : ''" [style.font-weight]="d === 25 ? 'bold' : ''">
+            {{ d < 10 ? '0' + d : d }}<br><span style="font-size: 0.65rem;">{{ d === 25 ? "Aujourd'hui" : 'Août' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngFor="let item of ganttItems; let idx = index" class="gantt-row">
+        <div class="gantt-col-vehicle" style="font-size: 0.85rem;">{{ item.vehicleTitle }}</div>
+        <div style="flex: 1; position: relative;">
+          <div class="gantt-bar" (click)="onBarClick(item)" [style.left.%]="(idx * 20) % 60" style="position: absolute; width: 40%; background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+            {{ item.reservationNumber }} ({{ item.clientName }} - {{ item.totalAmount }} MAD)
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="ganttItems.length === 0" style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <i class="fa-solid fa-calendar-xmark" style="font-size: 2.5rem; margin-bottom: 12px; color: #60a5fa;"></i>
+        <div>Aucune réservation enregistrée sur ce mois. Cliquez sur "Nouvelle Réservation".</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Angular Booking Modal Dialog -->
+  <div class="modal-backdrop" [class.active]="isModalOpen">
+    <div class="modal-dialog glass-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-calendar-plus blue-icon"></i> Créer une Nouvelle Réservation</h2>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
+      </div>
+
+      <form (ngSubmit)="submitReservation()">
+        <div class="form-group">
+          <label class="form-label">Sélectionner un Véhicule</label>
+          <select class="form-control" [(ngModel)]="newReservation.vehicleId" name="vehicleId">
+            <option *ngFor="let v of vehicles" [value]="v.id">{{ v.brand }} {{ v.model }} ({{ v.registrationNumber }}) - {{ v.dailyRate }} MAD/j</option>
+            <option *ngIf="vehicles.length === 0" [value]="1">Peugeot 208 (AB-123-CD) - 450 MAD/j</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Sélectionner un Client</label>
+          <select class="form-control" [(ngModel)]="newReservation.clientId" name="clientId">
+            <option *ngFor="let c of clients" [value]="c.id">{{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }} ({{ c.cinPassport || c.iceNumber }})</option>
+            <option *ngIf="clients.length === 0" [value]="1">Guillaume Moreau (123456789)</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Date de Début</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="newReservation.startDate" name="startDate">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date de Fin</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="newReservation.endDate" name="endDate">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Valider Réservation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

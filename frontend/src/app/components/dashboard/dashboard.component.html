@@ -1,0 +1,222 @@
+<div class="dashboard-component fade-in">
+  <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+      <h1 class="page-title">Tableau de Bord Exécutif</h1>
+      <p class="page-subtitle">Aperçu analytique en temps réel du parc automobile, dépenses, infractions et KPIs agence.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fa-solid fa-plus"></i> Nouvelle Réservation
+    </button>
+  </div>
+
+  <!-- KPI Grid (6 Metric Cards) -->
+  <div class="kpi-grid" style="grid-template-columns: repeat(6, 1fr);">
+    <div class="glass-panel kpi-card blue">
+      <div class="kpi-title">Taux d'Occupation</div>
+      <div class="kpi-val">{{ kpis.occupancyRate }}%</div>
+      <div class="kpi-sub blue-text"><i class="fa-solid fa-arrow-trend-up"></i> {{ kpis.rentedVehicles }} / {{ kpis.totalVehicles }} actifs</div>
+    </div>
+
+    <div class="glass-panel kpi-card green">
+      <div class="kpi-title">RevPAC</div>
+      <div class="kpi-val">{{ kpis.revPac }} MAD</div>
+      <div class="kpi-sub green-text"><i class="fa-solid fa-wallet"></i> CA: {{ kpis.totalRevenue }} MAD</div>
+    </div>
+
+    <div class="glass-panel kpi-card purple">
+      <div class="kpi-title">Cautions Actives</div>
+      <div class="kpi-val">{{ kpis.activeDepositsTotal }} MAD</div>
+      <div class="kpi-sub purple-text"><i class="fa-solid fa-shield-halved"></i> TPE & Chèques</div>
+    </div>
+
+    <div class="glass-panel kpi-card amber">
+      <div class="kpi-title">Alertes Flotte</div>
+      <div class="kpi-val amber-text">{{ kpis.imminentAlertsCount }}</div>
+      <div class="kpi-sub amber-text"><i class="fa-solid fa-bell"></i> Assurances & Visites</div>
+    </div>
+
+    <!-- NEW KPI 5: Somme Dépenses -->
+    <div class="glass-panel kpi-card" style="border-left: 4px solid #f59e0b;">
+      <div class="kpi-title">Total Dépenses</div>
+      <div class="kpi-val" style="color: #f59e0b;">{{ getTotalExpensesSum() | number:'1.0-0' }} MAD</div>
+      <div class="kpi-sub" style="color: #f59e0b;"><i class="fa-solid fa-wrench"></i> Entretien & TCO</div>
+    </div>
+
+    <!-- NEW KPI 6: Somme PV Radars -->
+    <div class="glass-panel kpi-card" style="border-left: 4px solid #ef4444;">
+      <div class="kpi-title">Total PV Radars</div>
+      <div class="kpi-val" style="color: #ef4444;">{{ getTotalRadarFinesSum() | number:'1.0-0' }} MAD</div>
+      <div class="kpi-sub" style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Infractions PV</div>
+    </div>
+  </div>
+
+  <!-- Row 1: Fleet Status & Regulatory Alerts -->
+  <div class="dashboard-panels" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+    <div class="glass-panel main-panel" style="padding: 24px;">
+      <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-car-side blue-icon"></i> Statut de la Flotte en Temps Réel</h3>
+      <div class="custom-table-container">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Véhicule</th>
+              <th>Immatriculation</th>
+              <th>Tarif/j</th>
+              <th>Kilométrage</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let v of vehicles">
+              <td style="font-weight:600;">{{ v.brand }} {{ v.model }} ({{ v.year }})</td>
+              <td><span style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px;">{{ v.registrationNumber }}</span></td>
+              <td>{{ v.dailyRate }} MAD</td>
+              <td>{{ v.currentMileage }} KM</td>
+              <td><span class="badge badge-{{ v.status }}">{{ v.status }}</span></td>
+            </tr>
+            <tr *ngIf="vehicles.length === 0">
+              <td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">Aucun véhicule enregistré.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <div class="glass-panel alert-box" style="padding: 24px;">
+        <h3 class="amber-header" style="margin-bottom: 16px;"><i class="fa-solid fa-triangle-exclamation"></i> Échéances Réglementaires</h3>
+        <div class="alert-list" style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="glass-card alert-item" style="padding: 14px;">
+            <div class="alert-title" style="display: flex; justify-content: space-between; font-weight: 700;"><span>Assurance - Peugeot 208</span><span style="color: #ef4444;">J-5</span></div>
+            <div class="alert-desc" style="font-size: 0.8rem; color: var(--text-muted);">Expiration: 30/08/2026 (AXA )</div>
+          </div>
+          <div class="glass-card alert-item" style="padding: 14px;">
+            <div class="alert-title" style="display: flex; justify-content: space-between; font-weight: 700;"><span>Contrôle Tech - Renault Clio</span><span style="color: #f59e0b;">J-14</span></div>
+            <div class="alert-desc" style="font-size: 0.8rem; color: var(--text-muted);">Expiration: 08/09/2026 (Autovision)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: PANELS WITH SUMS - Expenses & Radar Fines -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- Panel 1: Gestion des Dépenses & Entretien avec Somme Totale -->
+    <div class="glass-panel" style="padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h3><i class="fa-solid fa-wrench amber-icon"></i> Gestion des Dépenses & Entretien (TCO)</h3>
+          <div style="font-size: 0.85rem; color: #fbbf24; font-weight: 700; margin-top: 4px;">
+            Somme Totale : {{ getTotalExpensesSum() | number:'1.2-2' }} MAD
+          </div>
+        </div>
+        <a routerLink="/expenses" class="btn btn-secondary btn-xs">Voir Tout</a>
+      </div>
+      <div class="custom-table-container">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Véhicule</th>
+              <th>Catégorie</th>
+              <th>Montant</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let e of expenses">
+              <td style="font-weight: 600; color: #60a5fa;">{{ e.vehicleName }}</td>
+              <td><span class="badge badge-EN_MAINTENANCE">{{ e.category }}</span></td>
+              <td style="font-weight: 800; color: #ef4444;">{{ e.amount | number:'1.2-2' }} MAD</td>
+              <td>{{ e.expenseDate }}</td>
+            </tr>
+            <tr *ngIf="expenses.length === 0">
+              <td colspan="4" style="text-align:center; padding: 18px; color: var(--text-muted);">Aucune dépense récente.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panel 2: Registre des PV Radars & Infractions avec Somme Totale -->
+    <div class="glass-panel" style="padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h3><i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> Registre des PV Radars & Infractions</h3>
+          <div style="font-size: 0.85rem; color: #f87171; font-weight: 700; margin-top: 4px;">
+            Somme Totale : {{ getTotalRadarFinesSum() | number:'1.2-2' }} MAD
+          </div>
+        </div>
+        <a routerLink="/radars" class="btn btn-secondary btn-xs">Voir Tout</a>
+      </div>
+      <div class="custom-table-container">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>N° PV Radar</th>
+              <th>Véhicule</th>
+              <th>Montant</th>
+              <th>Client Réassigné</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of fines">
+              <td style="font-weight: 700; color: #60a5fa;">{{ f.ticketNumber }}</td>
+              <td>{{ f.vehicleName }}</td>
+              <td style="font-weight: 800; color: #ef4444;">{{ f.fineAmount | number:'1.2-2' }} MAD</td>
+              <td>
+                <span *ngIf="f.reallocated" class="badge badge-RESERVE">{{ f.clientName }}</span>
+                <span *ngIf="!f.reallocated" class="badge badge-EN_MAINTENANCE">Non réassigné</span>
+              </td>
+            </tr>
+            <tr *ngIf="fines.length === 0">
+              <td colspan="4" style="text-align:center; padding: 18px; color: var(--text-muted);">Aucune infraction déclarée.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Angular Modal Dialog -->
+  <div class="modal-backdrop" [class.active]="isModalOpen">
+    <div class="modal-dialog glass-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-calendar-plus blue-icon"></i> Créer une Nouvelle Réservation</h2>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
+      </div>
+
+      <form (ngSubmit)="submitReservation()">
+        <div class="form-group">
+          <label class="form-label">Sélectionner un Véhicule</label>
+          <select class="form-control" [(ngModel)]="newReservation.vehicleId" name="vehicleId">
+            <option *ngFor="let v of vehicles" [value]="v.id">{{ v.brand }} {{ v.model }} ({{ v.registrationNumber }}) - {{ v.dailyRate }} MAD/j</option>
+            <option *ngIf="vehicles.length === 0" [value]="1">Peugeot 208 (AB-123-CD) - 450 MAD/j</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Sélectionner un Client</label>
+          <select class="form-control" [(ngModel)]="newReservation.clientId" name="clientId">
+            <option *ngFor="let c of clients" [value]="c.id">{{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }} ({{ c.cinPassport || c.iceNumber }})</option>
+            <option *ngIf="clients.length === 0" [value]="1">Guillaume Moreau (123456789)</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Date de Début</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="newReservation.startDate" name="startDate">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date de Fin</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="newReservation.endDate" name="endDate">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Valider Réservation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
