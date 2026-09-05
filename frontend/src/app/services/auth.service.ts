@@ -21,11 +21,64 @@ export class AuthService {
         if (res && res.token) {
           localStorage.setItem('jwt_token', res.token);
           const userProfile = {
+            id: res.userId,
+            username: res.username,
+            email: res.email || '',
             fullName: res.fullName || (res.role === 'SUPER_ADMIN' ? 'Super Admin Master' : 'Amine El Amrani (Gérant)'),
+            phone: res.phone || '',
             role: res.role || 'ADMIN_AGENCE',
             tenantName: res.tenantName || 'Atlas Rent-a-Car Casablanca'
           };
           localStorage.setItem('user_profile', JSON.stringify(userProfile));
+        }
+      })
+    );
+  }
+
+  getMe(): Observable<any> {
+    const token = localStorage.getItem('jwt_token') || '';
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+    return this.http.get<any>(`${this.baseUrl}/auth/me`, { headers }).pipe(
+      tap((me) => {
+        if (me) {
+          const current = this.getUser();
+          const profile = {
+            ...current,
+            id: me.id,
+            username: me.username,
+            email: me.email,
+            fullName: me.fullName,
+            phone: me.phone,
+            role: me.role,
+            tenantName: me.tenantName || current.tenantName
+          };
+          localStorage.setItem('user_profile', JSON.stringify(profile));
+        }
+      })
+    );
+  }
+
+  updateProfile(data: { fullName?: string; phone?: string; currentPassword?: string; newPassword?: string }): Observable<any> {
+    const token = localStorage.getItem('jwt_token') || '';
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+    return this.http.put<any>(`${this.baseUrl}/auth/profile`, data, { headers }).pipe(
+      tap((updated) => {
+        if (updated) {
+          const current = this.getUser();
+          const profile = {
+            ...current,
+            fullName: updated.fullName || current.fullName,
+            phone: updated.phone || current.phone,
+            username: updated.username || current.username,
+            email: updated.email || current.email
+          };
+          localStorage.setItem('user_profile', JSON.stringify(profile));
         }
       })
     );
@@ -43,9 +96,12 @@ export class AuthService {
       } catch (e) {}
     }
     return {
-      fullName: 'Jean-Marc Dupont (Gérant)',
+      username: 'admin',
+      email: 'admin@rentflow.ma',
+      fullName: 'Amine El Amrani',
+      phone: '+212 6 00 00 00 00',
       role: 'ADMIN_AGENCE',
-      tenantName: 'Paris Étoile Car Prestige'
+      tenantName: 'Atlas Rent-a-Car Casablanca'
     };
   }
 

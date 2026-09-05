@@ -108,12 +108,15 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div class="user-pill">
+      <div class="user-pill" (click)="openProfileModal()" style="cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: background 0.2s;" title="Cliquez pour modifier votre profil">
         <div class="avatar" [style.background]="isSuperAdmin() ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'">
-          {{ isSuperAdmin() ? 'HQ' : 'JD' }}
+          {{ isSuperAdmin() ? 'HQ' : getInitials(user?.fullName || '') }}
         </div>
         <div class="user-details">
-          <div class="user-name">{{ user?.fullName || 'Jean-Marc Dupont' }}</div>
+          <div class="user-name" style="display: flex; align-items: center; gap: 4px;">
+            <span>{{ user?.fullName || 'Amine El Amrani' }}</span>
+            <i class="fa-solid fa-pen-to-square" style="font-size: 0.65rem; color: var(--text-muted);"></i>
+          </div>
           <div class="user-role">{{ user?.role === 'SUPER_ADMIN' ? '👑 Super Admin Master' : (user?.role === 'ADMIN_AGENCE' ? 'Gérant Agence' : 'Agent') }}</div>
         </div>
       </div>
@@ -149,7 +152,10 @@
       </div>
 
       <div class="header-right">
-        <div class="header-action-btn">
+        <div class="header-action-btn" (click)="openProfileModal()" title="Paramètres du Profil">
+          <i class="fa-solid fa-user-gear"></i>
+        </div>
+        <div class="header-action-btn" title="Notifications">
           <i class="fa-solid fa-bell"></i>
           <span class="notification-dot"></span>
         </div>
@@ -162,7 +168,103 @@
   </main>
 </div>
 
+<!-- Modal Édition de Profil Utilisateur -->
+<div class="modal-backdrop" [class.active]="isProfileModalOpen" (click)="closeProfileModal()">
+  <div class="modal-dialog glass-panel" (click)="$event.stopPropagation()" style="max-width: 540px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div class="avatar" style="width: 48px; height: 48px; font-size: 1.15rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+          {{ getInitials(profileForm.fullName) }}
+        </div>
+        <div>
+          <h3 style="font-size: 1.25rem; font-weight: 800; color: white;">Mon Profil & Paramètres</h3>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Gérez vos informations personnelles et sécurité</span>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-xs" style="border-radius: 50%; width: 32px; height: 32px; padding: 0;" (click)="closeProfileModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form (ngSubmit)="saveProfile()">
+      <!-- Non-Modifiable Fields (Username & Email) -->
+      <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
+        <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-lock" style="color: #fbbf24;"></i>
+          <span>Identifiants Système (Non modifiables)</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label class="form-label" style="font-size: 0.78rem;">Nom d'utilisateur</label>
+            <div style="position: relative;">
+              <input type="text" [value]="profileForm.username" disabled class="form-control" style="background: rgba(0, 0, 0, 0.3); color: #94a3b8; cursor: not-allowed; opacity: 0.8; padding-right: 32px; font-size: 0.85rem;">
+              <i class="fa-solid fa-lock" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: #64748b;"></i>
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label" style="font-size: 0.78rem;">Adresse Email</label>
+            <div style="position: relative;">
+              <input type="email" [value]="profileForm.email" disabled class="form-control" style="background: rgba(0, 0, 0, 0.3); color: #94a3b8; cursor: not-allowed; opacity: 0.8; padding-right: 32px; font-size: 0.85rem;">
+              <i class="fa-solid fa-lock" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: #64748b;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Editable Information -->
+      <div class="form-group">
+        <label class="form-label">Nom Complet & Prénom <span style="color: #ef4444;">*</span></label>
+        <div style="position: relative;">
+          <input type="text" name="fullName" [(ngModel)]="profileForm.fullName" required class="form-control" placeholder="Ex: Amine El Amrani" style="padding-left: 38px;">
+          <i class="fa-solid fa-user" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: #3b82f6;"></i>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Numéro de Téléphone / WhatsApp</label>
+        <div style="position: relative;">
+          <input type="tel" name="phone" [(ngModel)]="profileForm.phone" class="form-control" placeholder="Ex: +212 6 12 34 56 78" style="padding-left: 38px;">
+          <i class="fa-solid fa-phone" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: #10b981;"></i>
+        </div>
+      </div>
+
+      <!-- Optional Password Change -->
+      <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px; margin-top: 16px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #f8fafc; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-key" style="color: #818cf8;"></i>
+          <span>Sécurité : Changer de mot de passe (Optionnel)</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.78rem;">Mot de passe actuel</label>
+            <input type="password" name="currentPassword" [(ngModel)]="profileForm.currentPassword" class="form-control" placeholder="••••••••" style="font-size: 0.85rem;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.78rem;">Nouveau mot de passe</label>
+            <input type="password" name="newPassword" [(ngModel)]="profileForm.newPassword" class="form-control" placeholder="Min. 6 caractères" style="font-size: 0.85rem;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+        <button type="button" class="btn btn-secondary" (click)="closeProfileModal()">Annuler</button>
+        <button type="submit" class="btn btn-primary" [disabled]="isSavingProfile">
+          <i class="fa-solid fa-spinner fa-spin" *ngIf="isSavingProfile"></i>
+          <i class="fa-solid fa-floppy-disk" *ngIf="!isSavingProfile"></i>
+          <span>{{ isSavingProfile ? 'Enregistrement...' : 'Enregistrer les modifications' }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Public Outlet (Full Screen on Landing / and /login) -->
 <div *ngIf="!isInternalRoute()">
   <router-outlet></router-outlet>
 </div>
+

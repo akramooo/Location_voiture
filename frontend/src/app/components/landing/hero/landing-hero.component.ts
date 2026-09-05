@@ -27,8 +27,8 @@ import { CommonModule } from '@angular/common';
         </p>
 
         <div class="hero-buttons">
-          <a href="#tarifs" class="btn btn-hero-primary">
-            <span>Découvrir les Tarifs</span>
+          <a href="#fonctionnalites" class="btn btn-hero-primary">
+            <span>Découvrir les Fonctionnalités</span>
             <i class="fa-solid fa-arrow-right"></i>
           </a>
           <a href="#contact" class="btn btn-hero-secondary">

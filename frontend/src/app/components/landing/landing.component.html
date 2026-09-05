@@ -11,7 +11,6 @@
 
       <nav class="public-nav-links">
         <a href="#accueil" class="active">Accueil</a>
-        <a href="#tarifs">Tarifs</a>
         <a href="#fonctionnalites">Fonctionnalités</a>
         <a href="#contact">Contact</a>
       </nav>
@@ -26,56 +25,6 @@
 
   <!-- Modular Hero Component -->
   <app-landing-hero></app-landing-hero>
-
-  <!-- Pricing Section (Tariff Simulator) -->
-  <section id="tarifs" class="pricing-section">
-    <div class="section-header">
-      <h2>Tarification Simple & Transparente</h2>
-      <p>Sélectionnez le nombre de véhicules de votre flotte</p>
-    </div>
-
-    <div class="pricing-calculator-card glass-panel">
-      <div class="slider-box">
-        <div class="slider-header">
-          <span>Nombre de véhicules</span>
-          <span class="slider-badge"><i class="fa-solid fa-car"></i> {{ vehicleCount }} Véhicules</span>
-        </div>
-
-        <input type="range" min="1" max="50" [(ngModel)]="vehicleCount" class="custom-range-slider">
-
-        <div class="slider-tiers">
-          <div class="tier-pill" [class.active]="vehicleCount <= 10">1-10<br><strong>200 dh</strong></div>
-          <div class="tier-pill" [class.active]="vehicleCount > 10 && vehicleCount <= 20">11-20<br><strong>350 dh</strong></div>
-          <div class="tier-pill" [class.active]="vehicleCount > 20 && vehicleCount <= 35">21-35<br><strong>450 dh</strong></div>
-          <div class="tier-pill" [class.active]="vehicleCount > 35 && vehicleCount <= 45">36-45<br><strong>550 dh</strong></div>
-          <div class="tier-pill" [class.active]="vehicleCount > 45">46-50<br><strong>600 dh</strong></div>
-        </div>
-      </div>
-
-      <div class="pricing-display">
-        <div class="p-label">Votre tarif mensuel</div>
-        <div class="p-amount">
-          {{ getTotalPrice() | number:'1.0-0' }} <span class="p-unit">dh /mois</span>
-        </div>
-        <div class="p-sub">soit {{ getPerVehicleMonthlyRate() }} dh par véhicule</div>
-
-        <div class="plan-selector-pills">
-          <button class="plan-pill" [class.active]="selectedPlan === 'MONTHLY'" (click)="selectedPlan = 'MONTHLY'">
-            6 mois<br><strong>{{ (vehicleCount * getPerVehicleMonthlyRate() * 6) | number:'1.0-0' }} dh</strong>
-          </button>
-          <button class="plan-pill active-blue" [class.active]="selectedPlan === 'ANNUAL'" (click)="selectedPlan = 'ANNUAL'">
-            <span class="badge-promo">RECOMMANDÉ</span>
-            12 mois<br><strong>{{ (vehicleCount * getPerVehicleMonthlyRate() * 11) | number:'1.0-0' }} dh</strong>
-            <span class="free-month">1 mois gratuit</span>
-          </button>
-        </div>
-
-        <button class="btn btn-commencer" (click)="goToLogin()">
-          <i class="fa-solid fa-paper-plane"></i> Commencer maintenant
-        </button>
-      </div>
-    </div>
-  </section>
 
   <!-- Modular Features Component -->
   <app-landing-features></app-landing-features>
