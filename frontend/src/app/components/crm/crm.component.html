@@ -27,7 +27,7 @@
             <th>Permis / Mandat</th>
             <th>WhatsApp / Tél</th>
             <th>Score Confiance</th>
-            <th>Anti-Fraude</th>
+            <th>Blacklist</th>
             <th style="text-align: right;">Actions</th>
           </tr>
         </thead>
@@ -35,7 +35,7 @@
           <tr *ngFor="let c of filteredClients" [style.background]="c.blacklisted ? 'rgba(239, 68, 68, 0.08)' : ''">
             <td>
               <span class="badge" [class.badge-DISPONIBLE]="c.clientType === 'PARTICULIER'" [class.badge-RESERVE]="c.clientType === 'ENTREPRISE'">
-                {{ c.clientType }}
+                {{ c.clientType === 'ENTREPRISE' ? 'STE' : 'PP' }}
               </span>
             </td>
             <td style="font-weight: 700;" [style.color]="c.blacklisted ? '#f87171' : ''">
@@ -67,11 +67,11 @@
               </span>
             </td>
             <td>
-              <button *ngIf="c.blacklisted" class="btn btn-secondary btn-xs" style="color: #10b981; border-color: rgba(16, 185, 129, 0.3);" (click)="toggleBlacklist(c)" title="Débloquer ce client">
-                <i class="fa-solid fa-unlock"></i> Débloquer
+              <button *ngIf="c.blacklisted" class="btn btn-secondary btn-xs" style="color: #10b981; border-color: rgba(16, 185, 129, 0.3); padding: 5px 9px;" (click)="toggleBlacklist(c)" title="Débloquer ce client (Actuellement Blacklisté)">
+                <i class="fa-solid fa-unlock"></i>
               </button>
-              <button *ngIf="!c.blacklisted" class="btn btn-danger btn-xs" (click)="toggleBlacklist(c)" title="Signaler en blacklist">
-                <i class="fa-solid fa-ban"></i> Blacklister
+              <button *ngIf="!c.blacklisted" class="btn btn-danger btn-xs" style="padding: 5px 9px;" (click)="toggleBlacklist(c)" title="Signaler en blacklist">
+                <i class="fa-solid fa-ban"></i>
               </button>
             </td>
             <td style="text-align: right;">
