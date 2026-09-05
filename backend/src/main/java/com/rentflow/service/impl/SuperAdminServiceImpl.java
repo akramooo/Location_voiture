@@ -131,7 +131,10 @@ public class SuperAdminServiceImpl implements SuperAdminService {
                 .orElseThrow(() -> new IllegalArgumentException("Agence introuvable"));
 
         if (request.getSubscriptionPlan() != null) tenant.setSubscriptionPlan(request.getSubscriptionPlan());
-        if (request.getSubscriptionStatus() != null) tenant.setSubscriptionStatus(request.getSubscriptionStatus());
+        if (request.getSubscriptionStatus() != null) {
+            tenant.setSubscriptionStatus(request.getSubscriptionStatus());
+            tenant.setActive(!"SUSPENDED".equalsIgnoreCase(request.getSubscriptionStatus()) && !"EXPIRED".equalsIgnoreCase(request.getSubscriptionStatus()));
+        }
         if (request.getMaxVehicles() != null) tenant.setMaxVehicles(request.getMaxVehicles());
         if (request.getMonthlyPrice() != null) tenant.setMonthlyPrice(request.getMonthlyPrice());
         if (request.getSubscriptionEnd() != null) tenant.setSubscriptionEnd(request.getSubscriptionEnd());

@@ -361,6 +361,27 @@ export class SuperAdminComponent implements OnInit {
     this.isEditModalOpen = true;
   }
 
+  onEditSubscriptionDateChange(): void {
+    if (!this.selectedTenant || !this.selectedTenant.subscriptionEnd) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const parts = this.selectedTenant.subscriptionEnd.split('-');
+    if (parts.length === 3) {
+      const expiry = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      expiry.setHours(0, 0, 0, 0);
+
+      if (expiry < today) {
+        this.selectedTenant.subscriptionStatus = 'EXPIRED';
+      } else {
+        if (this.selectedTenant.subscriptionStatus === 'EXPIRED') {
+          this.selectedTenant.subscriptionStatus = (this.selectedTenant.monthlyPrice && this.selectedTenant.monthlyPrice > 0) ? 'ACTIVE' : 'TRIAL';
+        }
+      }
+    }
+  }
+
   closeEditModal(): void {
     this.isEditModalOpen = false;
     this.selectedTenant = null;
