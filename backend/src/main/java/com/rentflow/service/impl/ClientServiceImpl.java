@@ -117,17 +117,40 @@ public class ClientServiceImpl implements ClientService {
         }
 
         Client existing = clientOpt.get();
+
+        if (updatedDto.getCinPassport() != null && !updatedDto.getCinPassport().trim().isEmpty()) {
+            String normalizedCin = updatedDto.getCinPassport().trim().toUpperCase();
+            if (!normalizedCin.equalsIgnoreCase(existing.getCinPassport())) {
+                if (clientRepository.findByTenantIdAndCinPassport(tenantId, normalizedCin).isPresent()) {
+                    throw new IllegalArgumentException("Un client avec le CIN / Passeport '" + normalizedCin + "' existe déjà.");
+                }
+            }
+            existing.setCinPassport(normalizedCin);
+        }
+
+        if (updatedDto.getIceNumber() != null && !updatedDto.getIceNumber().trim().isEmpty()) {
+            String normalizedIce = updatedDto.getIceNumber().trim();
+            if (!normalizedIce.equalsIgnoreCase(existing.getIceNumber())) {
+                if (clientRepository.findByTenantIdAndIceNumber(tenantId, normalizedIce).isPresent()) {
+                    throw new IllegalArgumentException("Une entreprise avec l'ICE '" + normalizedIce + "' existe déjà.");
+                }
+            }
+            existing.setIceNumber(normalizedIce);
+        }
+
+        if (updatedDto.getClientType() != null) {
+            existing.setClientType(updatedDto.getClientType());
+        }
         existing.setFirstName(updatedDto.getFirstName());
         existing.setLastName(updatedDto.getLastName());
-        existing.setCinPassport(updatedDto.getCinPassport());
         existing.setDriverLicenseNumber(updatedDto.getDriverLicenseNumber());
         existing.setPhoneWhatsApp(updatedDto.getPhoneWhatsApp());
         existing.setEmail(updatedDto.getEmail());
         existing.setNationality(updatedDto.getNationality());
         existing.setCompanyName(updatedDto.getCompanyName());
-        existing.setIceNumber(updatedDto.getIceNumber());
         existing.setIfNumber(updatedDto.getIfNumber());
         existing.setRcNumber(updatedDto.getRcNumber());
+        existing.setDesignatedDriverName(updatedDto.getDesignatedDriverName());
 
         Client saved = clientRepository.save(existing);
         return clientMapper.toDto(saved);

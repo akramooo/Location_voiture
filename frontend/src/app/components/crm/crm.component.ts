@@ -17,6 +17,8 @@ export class CrmComponent implements OnInit {
   searchTerm = '';
   isModalOpen = false;
   isSubmitting = false;
+  isEditMode = false;
+  editingClientId: number | null = null;
 
   isDeleteModalOpen = false;
   isDeleting = false;
@@ -69,6 +71,8 @@ export class CrmComponent implements OnInit {
   }
 
   openModal(): void {
+    this.isEditMode = false;
+    this.editingClientId = null;
     this.newClient = {
       clientType: 'PARTICULIER',
       firstName: '',
@@ -82,6 +86,28 @@ export class CrmComponent implements OnInit {
       designatedDriverName: '',
       riskScore: 95,
       blacklisted: false
+    };
+    this.isSubmitting = false;
+    this.isModalOpen = true;
+  }
+
+  openEditModal(client: Client): void {
+    this.isEditMode = true;
+    this.editingClientId = client.id || null;
+    this.newClient = {
+      ...client,
+      clientType: client.clientType || 'PARTICULIER',
+      firstName: client.firstName || '',
+      lastName: client.lastName || '',
+      cinPassport: client.cinPassport || '',
+      driverLicenseNumber: client.driverLicenseNumber || '',
+      phoneWhatsApp: client.phoneWhatsApp || '',
+      email: client.email || '',
+      companyName: client.companyName || '',
+      iceNumber: client.iceNumber || '',
+      designatedDriverName: client.designatedDriverName || '',
+      riskScore: client.riskScore || 95,
+      blacklisted: client.blacklisted || false
     };
     this.isSubmitting = false;
     this.isModalOpen = true;
@@ -134,19 +160,35 @@ export class CrmComponent implements OnInit {
       lastName: this.newClient.lastName ? this.newClient.lastName.trim() : undefined
     };
 
-    this.apiService.post<Client>('/clients', payload).subscribe({
-      next: () => {
-        this.isSubmitting = false;
-        this.closeModal();
-        this.toastService.success('Fiche client enregistrée avec succès !', 'Client Créé');
-        this.loadClients();
-      },
-      error: (err) => {
-        this.isSubmitting = false;
-        const msg = err.error?.message || 'Erreur lors de la création du client (Vérifiez si le CIN est unique)';
-        this.toastService.error(msg, 'Création Impossible');
-      }
-    });
+    if (this.isEditMode && this.editingClientId) {
+      this.apiService.put<Client>(`/clients/${this.editingClientId}`, payload).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.closeModal();
+          this.toastService.success('Fiche client mise à jour avec succès !', 'Modification Enregistrée');
+          this.loadClients();
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          const msg = err.error?.message || 'Erreur lors de la modification du client';
+          this.toastService.error(msg, 'Modification Impossible');
+        }
+      });
+    } else {
+      this.apiService.post<Client>('/clients', payload).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.closeModal();
+          this.toastService.success('Fiche client enregistrée avec succès !', 'Client Créé');
+          this.loadClients();
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          const msg = err.error?.message || 'Erreur lors de la création du client (Vérifiez si le CIN est unique)';
+          this.toastService.error(msg, 'Création Impossible');
+        }
+      });
+    }
   }
 
   toggleBlacklist(client: Client): void {

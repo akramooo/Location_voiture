@@ -39,12 +39,7 @@
               </span>
             </td>
             <td style="font-weight: 700;" [style.color]="c.blacklisted ? '#f87171' : ''">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="avatar" style="width: 28px; height: 28px; font-size: 0.75rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
-                  {{ c.clientType === 'ENTREPRISE' ? '🏢' : (c.firstName ? c.firstName.charAt(0) : 'U') }}
-                </div>
-                <span>{{ c.clientType === 'ENTREPRISE' ? (c.companyName || c.firstName) : ((c.firstName || '') + ' ' + (c.lastName || '')) }}</span>
-              </div>
+              {{ c.clientType === 'ENTREPRISE' ? (c.companyName || c.firstName) : ((c.firstName || '') + ' ' + (c.lastName || '')) }}
             </td>
             <td>
               <code style="background: rgba(255, 255, 255, 0.05); padding: 2px 6px; border-radius: 4px; color: #38bdf8; font-weight: 600;">
@@ -75,9 +70,14 @@
               </button>
             </td>
             <td style="text-align: right;">
-              <button class="btn btn-secondary btn-xs" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); padding: 5px 9px;" (click)="openDeleteModal(c)" title="Supprimer définitivement ce client">
-                <i class="fa-solid fa-trash"></i>
-              </button>
+              <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <button class="btn btn-secondary btn-xs" style="color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); padding: 5px 9px;" (click)="openEditModal(c)" title="Modifier ce client">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button class="btn btn-secondary btn-xs" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); padding: 5px 9px;" (click)="openDeleteModal(c)" title="Supprimer définitivement ce client">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>
           <tr *ngIf="filteredClients.length === 0">
@@ -91,11 +91,14 @@
     </div>
   </div>
 
-  <!-- Angular Add Client Modal Dialog -->
+  <!-- Angular Add/Edit Client Modal Dialog -->
   <div class="modal-backdrop" [class.active]="isModalOpen" (click)="closeModal()">
     <div class="modal-dialog glass-panel" (click)="$event.stopPropagation()" style="max-width: 580px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-user-plus blue-icon"></i> Ajouter un Nouveau Client</h2>
+        <h2 style="font-size: 1.25rem;">
+          <i class="fa-solid" [class.fa-user-plus]="!isEditMode" [class.fa-pen-to-square]="isEditMode" style="color: #3b82f6; margin-right: 8px;"></i>
+          {{ isEditMode ? 'Modifier la Fiche Client' : 'Ajouter un Nouveau Client' }}
+        </h2>
         <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" [disabled]="isSubmitting" (click)="closeModal()">&times;</button>
       </div>
 
@@ -169,7 +172,7 @@
           <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
             <i class="fa-solid fa-spinner fa-spin" *ngIf="isSubmitting"></i>
             <i class="fa-solid fa-check" *ngIf="!isSubmitting"></i>
-            <span>{{ isSubmitting ? 'Enregistrement en cours...' : 'Créer Fiche Client' }}</span>
+            <span>{{ isSubmitting ? (isEditMode ? 'Modification en cours...' : 'Enregistrement en cours...') : (isEditMode ? 'Enregistrer les modifications' : 'Créer Fiche Client') }}</span>
           </button>
         </div>
       </form>
