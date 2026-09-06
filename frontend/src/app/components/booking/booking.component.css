@@ -1,55 +1,692 @@
 .booking-component {
-  animation: fadeIn 0.4s ease-out;
-}
-
-.gantt-container {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  overflow-x: auto;
+  gap: 20px;
 }
 
-.gantt-header {
+/* ========================================================================= */
+/* 1. TOP HEADER & KPIS BAR                                                  */
+/* ========================================================================= */
+.planning-header-panel {
   display: flex;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 12px;
-  border-radius: 8px;
-  font-weight: 700;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 28px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.gantt-col-vehicle {
-  width: 220px;
-  min-width: 220px;
-}
-
-.gantt-timeline-header {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(14, 1fr);
-  text-align: center;
-  font-size: 0.8rem;
-}
-
-.gantt-row {
+.title-with-badge {
   display: flex;
   align-items: center;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 12px;
 }
 
-.gantt-bar {
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: white;
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.pulsing-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  animation: pulseDot 1.8s infinite;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.planning-kpis {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.kpi-mini-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  min-width: 140px;
+}
+
+.kpi-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.kpi-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.kpi-lbl {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* ========================================================================= */
+/* 2. TIMELINE CONTROLS & TOOLBAR                                            */
+/* ========================================================================= */
+.timeline-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.toolbar-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-group-nav {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.btn-nav-icon {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 6px 12px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  transition: transform 0.2s ease;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
-.gantt-bar:hover {
-  transform: translateY(-2px);
+.btn-nav-icon:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }
+
+.btn-nav-today {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  color: #60a5fa;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-nav-today:hover {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.current-period-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.view-switcher-group {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.view-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-btn:hover {
+  color: #ffffff;
+}
+
+.view-btn.active {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
+}
+
+.toolbar-action-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-input-wrap {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.filter-search {
+  padding-left: 34px !important;
+  width: 200px;
+  height: 38px;
+  font-size: 0.85rem;
+}
+
+/* ========================================================================= */
+/* 3. GANTT MATRIX TABLE                                                     */
+/* ========================================================================= */
+.gantt-main-card {
+  padding: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.gantt-scroll-wrapper {
+  overflow-x: auto;
+  min-width: 100%;
+}
+
+.gantt-matrix-header {
+  display: flex;
+  background: rgba(30, 41, 59, 0.85);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.vehicle-col-header {
+  width: 260px;
+  min-width: 260px;
+  padding: 14px 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.95);
+  position: sticky;
+  left: 0;
+  z-index: 12;
+}
+
+.timeline-slots-header {
+  flex: 1;
+  display: grid;
+  min-width: 600px;
+}
+
+.timeline-day-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 4px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+}
+
+.timeline-day-cell .day-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.timeline-day-cell .day-number {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 1px 0;
+}
+
+.timeline-day-cell .month-mini {
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.today-cell {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-bottom: 2px solid #3b82f6;
+}
+
+.today-cell .day-number {
+  color: #60a5fa !important;
+}
+
+.today-marker-dot {
+  position: absolute;
+  top: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 6px #60a5fa;
+}
+
+.weekend-cell {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.weekend-cell .day-name {
+  color: #cbd5e1;
+}
+
+/* Vehicle Rows */
+.gantt-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.gantt-vehicle-row {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  min-height: 72px;
+  transition: background 0.15s ease;
+}
+
+.gantt-vehicle-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.vehicle-info-cell {
+  width: 260px;
+  min-width: 260px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.95);
+  position: sticky;
+  left: 0;
+  z-index: 8;
+  cursor: pointer;
+}
+
+.vehicle-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.vehicle-meta {
+  flex: 1;
+  overflow: hidden;
+}
+
+.vehicle-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vehicle-plate-badge {
+  font-size: 0.72rem;
+  font-family: monospace;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 3px;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.btn-quick-add {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.vehicle-info-cell:hover .btn-quick-add {
+  opacity: 1;
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+
+/* Timeline Track & Slots */
+.timeline-track-cell {
+  flex: 1;
+  position: relative;
+  min-width: 600px;
+}
+
+.timeline-bg-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+}
+
+.grid-slot-cell {
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  height: 100%;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.grid-slot-cell:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.grid-slot-cell.today-slot {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.grid-slot-cell.weekend-slot {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Reservation Bars */
+.bars-container {
+  position: relative;
+  height: 100%;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.gantt-bar-item {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  border-radius: 8px;
+  padding: 4px 10px;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  z-index: 5;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+  overflow: hidden;
+}
+
+.gantt-bar-item:hover {
+  transform: translateY(-2px);
+  z-index: 9;
+  filter: brightness(1.1);
+}
+
+.bar-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+}
+
+.bar-status-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.bar-title {
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.bar-client {
+  font-weight: 600;
+  opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-price {
+  margin-left: auto;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+/* Empty State */
+.empty-gantt-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: #60a5fa;
+  margin-bottom: 16px;
+  display: block;
+}
+
+/* ========================================================================= */
+/* 4. MODAL & QUICK ACTION STYLES                                            */
+/* ========================================================================= */
+.modal-header-styled {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 14px;
+}
+
+.res-badge-header {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.client-detail-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.btn-whatsapp {
+  background: #25d366;
+  color: #ffffff;
+  border: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-whatsapp:hover {
+  background: #1eb956;
+  transform: translateY(-1px);
+}
+
+.grid-2-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.grid-3-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.info-tile {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.info-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.info-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.btn-success-soft {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: #34d399;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.btn-success-soft:hover {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.btn-primary-soft {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: #60a5fa;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.btn-primary-soft:hover {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.btn-danger-soft {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #f87171;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.btn-danger-soft:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.price-estimation-box {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+

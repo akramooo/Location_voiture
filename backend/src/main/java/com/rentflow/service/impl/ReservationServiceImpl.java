@@ -57,12 +57,17 @@ public class ReservationServiceImpl implements ReservationService {
             item.put("vehicleTitle", r.getVehicle().getBrand() + " " + r.getVehicle().getModel() + " (" + r.getVehicle().getRegistrationNumber() + ")");
             item.put("clientName", r.getClient().getClientType().equals("ENTREPRISE") ? r.getClient().getCompanyName() : (r.getClient().getFirstName() + " " + r.getClient().getLastName()));
             item.put("clientPhone", r.getClient().getPhoneWhatsApp());
+            item.put("clientCin", r.getClient().getCinPassport() != null ? r.getClient().getCinPassport() : r.getClient().getIceNumber());
             item.put("startDate", r.getStartDate());
             item.put("endDate", r.getEndDate());
             item.put("status", r.getStatus());
             item.put("totalAmount", r.getTotalAmount());
             item.put("depositAmount", r.getDepositAmount());
             item.put("paidAmount", r.getPaidAmount());
+            item.put("dailyRate", r.getDailyRate());
+            item.put("totalDays", r.getTotalDays());
+            item.put("pickupLocation", r.getPickupLocation());
+            item.put("returnLocation", r.getReturnLocation());
             items.add(item);
         }
 

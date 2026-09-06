@@ -1,92 +1,365 @@
 <div class="booking-component fade-in">
-  <div class="booking-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-    <div>
-      <h1 class="page-title">Planning Gantt Interactif</h1>
-      <p class="page-subtitle">Vue d'ensemble du parc automobile avec détection des conflits de disponibilité.</p>
+
+  <!-- ========================================================================= -->
+  <!-- TOP HEADER & STATS BAR                                                    -->
+  <!-- ========================================================================= -->
+  <div class="planning-header-panel glass-panel">
+    <div class="header-titles">
+      <div class="title-with-badge">
+        <h1 class="page-title"><i class="fa-solid fa-calendar-days blue-icon"></i> Planning & Flotte</h1>
+        <span class="live-badge"><span class="pulsing-dot"></span> EN DIRECT</span>
+      </div>
+      <p class="page-subtitle">Vue d'ensemble temporelle du parc automobile, détection des conflits et gestion des départs / retours.</p>
     </div>
-    <button class="btn btn-primary" (click)="openModal()">
-      <i class="fa-solid fa-calendar-plus"></i> Nouvelle Réservation
-    </button>
+
+    <!-- KPI Cards Bar -->
+    <div class="planning-kpis">
+      <div class="kpi-mini-card">
+        <div class="kpi-icon-wrap" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+          <i class="fa-solid fa-car"></i>
+        </div>
+        <div>
+          <div class="kpi-val">{{ vehicles.length }}</div>
+          <div class="kpi-lbl">Total Flotte</div>
+        </div>
+      </div>
+
+      <div class="kpi-mini-card">
+        <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+          <i class="fa-solid fa-key"></i>
+        </div>
+        <div>
+          <div class="kpi-val">{{ availableVehiclesCount }}</div>
+          <div class="kpi-lbl">Disponibles</div>
+        </div>
+      </div>
+
+      <div class="kpi-mini-card">
+        <div class="kpi-icon-wrap" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+          <i class="fa-solid fa-chart-pie"></i>
+        </div>
+        <div>
+          <div class="kpi-val">{{ occupancyRate }}%</div>
+          <div class="kpi-lbl">Taux d'Occupation</div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="glass-panel main-gantt-panel" style="padding: 24px;">
-    <div class="gantt-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h3><i class="fa-solid fa-calendar-week blue-icon"></i> Mois de Août / Septembre 2026</h3>
+  <!-- ========================================================================= -->
+  <!-- TIMELINE CONTROLS BAR (LOC.MA STYLE NAVIGATION & VIEW SWITCHER)          -->
+  <!-- ========================================================================= -->
+  <div class="glass-panel timeline-toolbar">
+    <!-- Left: Period Navigation -->
+    <div class="toolbar-nav-group">
+      <div class="btn-group-nav">
+        <button class="btn btn-nav-icon" (click)="prevPeriod()" title="Période Précédente">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button class="btn btn-nav-today" (click)="goToToday()">
+          <i class="fa-solid fa-calendar-day"></i> Aujourd'hui
+        </button>
+        <button class="btn btn-nav-icon" (click)="nextPeriod()" title="Période Suivante">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div class="current-period-label">
+        <i class="fa-solid fa-calendar-week" style="color: #60a5fa;"></i>
+        <span>{{ currentMonthYearLabel }}</span>
+      </div>
     </div>
 
-    <div class="gantt-container" id="gantt-view-holder">
-      <div class="gantt-header">
-        <div class="gantt-col-vehicle">Véhicule / Immat</div>
-        <div class="gantt-timeline-header">
-          <div *ngFor="let d of days" class="gantt-day-slot" [style.color]="d === 25 ? '#3b82f6' : ''" [style.font-weight]="d === 25 ? 'bold' : ''">
-            {{ d < 10 ? '0' + d : d }}<br><span style="font-size: 0.65rem;">{{ d === 25 ? "Aujourd'hui" : 'Août' }}</span>
+    <!-- Center: View Switcher (7j, 15j, 30j) -->
+    <div class="view-switcher-group">
+      <button class="view-btn" [class.active]="viewMode === '7d'" (click)="setViewMode('7d')">
+        7 Jours
+      </button>
+      <button class="view-btn" [class.active]="viewMode === '15d'" (click)="setViewMode('15d')">
+        15 Jours
+      </button>
+      <button class="view-btn" [class.active]="viewMode === '30d'" (click)="setViewMode('30d')">
+        30 Jours
+      </button>
+    </div>
+
+    <!-- Right: Filter & Action -->
+    <div class="toolbar-action-group">
+      <div class="search-input-wrap">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" class="form-control filter-search" placeholder="Rechercher véhicule..." [(ngModel)]="vehicleSearchQuery">
+      </div>
+
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <i class="fa-solid fa-calendar-plus"></i> Nouvelle Réservation
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN GANTT MATRIX CONTAINER                                              -->
+  <!-- ========================================================================= -->
+  <div class="glass-panel gantt-main-card">
+    <div class="gantt-scroll-wrapper">
+
+      <!-- GANTT HEADER ROW -->
+      <div class="gantt-matrix-header">
+        <div class="vehicle-col-header">
+          <span>VÉHICULES DU PARC ({{ filteredVehicles.length }})</span>
+        </div>
+
+        <div class="timeline-slots-header" [style.grid-template-columns]="'repeat(' + timelineDays.length + ', minmax(48px, 1fr))'">
+          <div *ngFor="let d of timelineDays" 
+               class="timeline-day-cell" 
+               [class.today-cell]="d.isToday"
+               [class.weekend-cell]="d.isWeekend">
+            <span class="day-name">{{ d.dayName }}</span>
+            <span class="day-number">{{ d.dayNum }}</span>
+            <span class="month-mini">{{ d.monthName }}</span>
+            <div *ngIf="d.isToday" class="today-marker-dot" title="Aujourd'hui"></div>
           </div>
         </div>
       </div>
 
-      <div *ngFor="let item of ganttItems; let idx = index" class="gantt-row">
-        <div class="gantt-col-vehicle" style="font-size: 0.85rem;">{{ item.vehicleTitle }}</div>
-        <div style="flex: 1; position: relative;">
-          <div class="gantt-bar" (click)="onBarClick(item)" [style.left.%]="(idx * 20) % 60" style="position: absolute; width: 40%; background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
-            {{ item.reservationNumber }} ({{ item.clientName }} - {{ item.totalAmount }} MAD)
+      <!-- GANTT ROWS (ONE PER VEHICLE) -->
+      <div class="gantt-body">
+        <div *ngFor="let v of filteredVehicles" class="gantt-vehicle-row">
+          
+          <!-- Left: Vehicle Summary Card -->
+          <div class="vehicle-info-cell" (click)="openCreateModal(v)">
+            <div class="vehicle-avatar">
+              <i class="fa-solid fa-car-side"></i>
+            </div>
+            <div class="vehicle-meta">
+              <div class="vehicle-name">{{ v.brand }} {{ v.model }}</div>
+              <div class="vehicle-plate-badge">{{ v.registrationNumber }}</div>
+            </div>
+            <button class="btn-quick-add" title="Ajouter une réservation sur ce véhicule">
+              <i class="fa-solid fa-plus"></i>
+            </button>
           </div>
+
+          <!-- Right: Timeline Track -->
+          <div class="timeline-track-cell">
+            <!-- Background Grid Lines -->
+            <div class="timeline-bg-grid" [style.grid-template-columns]="'repeat(' + timelineDays.length + ', minmax(48px, 1fr))'">
+              <div *ngFor="let d of timelineDays" 
+                   class="grid-slot-cell"
+                   [class.today-slot]="d.isToday"
+                   [class.weekend-slot]="d.isWeekend"
+                   (click)="openCreateModal(v, d.dateStr)"
+                   title="Cliquer pour réserver le {{ d.dateStr }}">
+              </div>
+            </div>
+
+            <!-- Foreground Reservation Bars -->
+            <div class="bars-container">
+              <div *ngFor="let item of getVehicleReservations(v.id!)"
+                   class="gantt-bar-item"
+                   [ngStyle]="getBlockStyle(item)"
+                   (click)="openDetailModal(item); $event.stopPropagation()"
+                   title="N° {{ item.reservationNumber }} - {{ item.clientName }} ({{ item.totalAmount }} MAD)">
+                
+                <div class="bar-content">
+                  <span class="bar-status-icon">
+                    <i *ngIf="item.status === 'EN_COURS' || item.status === 'ACTIVE'" class="fa-solid fa-circle-check"></i>
+                    <i *ngIf="item.status === 'CONFIRMEE'" class="fa-solid fa-clock"></i>
+                    <i *ngIf="item.status === 'MAINTENANCE'" class="fa-solid fa-wrench"></i>
+                    <i *ngIf="item.status === 'TERMINEE'" class="fa-solid fa-flag-checkered"></i>
+                  </span>
+                  <span class="bar-title">{{ item.reservationNumber }}</span>
+                  <span class="bar-client">{{ item.clientName }}</span>
+                  <span class="bar-price">{{ item.totalAmount | number:'1.0-0' }} MAD</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Empty State if no vehicles -->
+        <div *ngIf="filteredVehicles.length === 0" class="empty-gantt-state">
+          <i class="fa-solid fa-car-tunnel empty-icon"></i>
+          <h3>Aucun véhicule trouvé</h3>
+          <p>Ajoutez des véhicules dans votre parc pour commencer à planifier des réservations.</p>
         </div>
       </div>
 
-      <div *ngIf="ganttItems.length === 0" style="text-align: center; padding: 40px; color: var(--text-muted);">
-        <i class="fa-solid fa-calendar-xmark" style="font-size: 2.5rem; margin-bottom: 12px; color: #60a5fa;"></i>
-        <div>Aucune réservation enregistrée sur ce mois. Cliquez sur "Nouvelle Réservation".</div>
-      </div>
     </div>
   </div>
 
-  <!-- Angular Booking Modal Dialog -->
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: DÉTAILS RÉSERVATION & ACTION RAPIDE WHATSAPP                     -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" [class.active]="isDetailModalOpen" *ngIf="selectedReservation">
+    <div class="modal-dialog glass-panel" style="max-width: 520px;">
+      
+      <div class="modal-header-styled">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="res-badge-header">
+            <i class="fa-solid fa-file-contract"></i>
+          </div>
+          <div>
+            <h2 style="font-size: 1.2rem; color: #fff; margin: 0;">Réservation {{ selectedReservation.reservationNumber }}</h2>
+            <div style="font-size: 0.8rem; color: #94a3b8;">{{ selectedReservation.vehicleTitle }}</div>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="closeDetailModal()">&times;</button>
+      </div>
+
+      <div class="detail-modal-body">
+        <!-- Client Card -->
+        <div class="client-detail-card">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Client & Contact</div>
+              <div style="font-size: 1.05rem; font-weight: 800; color: #f1f5f9; margin-top: 2px;">{{ selectedReservation.clientName }}</div>
+              <div style="font-size: 0.85rem; color: #60a5fa; font-family: monospace; margin-top: 2px;">
+                <i class="fa-solid fa-phone"></i> {{ selectedReservation.clientPhone || 'Non renseigné' }}
+              </div>
+            </div>
+            <!-- WhatsApp Quick Action Button -->
+            <button class="btn btn-whatsapp" (click)="sendWhatsApp(selectedReservation)">
+              <i class="fa-brands fa-whatsapp"></i> WhatsApp
+            </button>
+          </div>
+        </div>
+
+        <!-- Dates & Financials -->
+        <div class="grid-2-cols" style="margin-bottom: 16px;">
+          <div class="info-tile">
+            <div class="info-label">Date de Début (Check-in)</div>
+            <div class="info-value"><i class="fa-solid fa-calendar-check" style="color: #34d399;"></i> {{ selectedReservation.startDate | date:'dd/MM/yyyy HH:mm' }}</div>
+          </div>
+          <div class="info-tile">
+            <div class="info-label">Date de Fin (Check-out)</div>
+            <div class="info-value"><i class="fa-solid fa-calendar-xmark" style="color: #f87171;"></i> {{ selectedReservation.endDate | date:'dd/MM/yyyy HH:mm' }}</div>
+          </div>
+        </div>
+
+        <div class="grid-3-cols" style="margin-bottom: 20px;">
+          <div class="info-tile">
+            <div class="info-label">Montant Total</div>
+            <div class="info-value" style="color: #34d399; font-weight: 800;">{{ selectedReservation.totalAmount }} MAD</div>
+          </div>
+          <div class="info-tile">
+            <div class="info-label">Caution / Dépôt</div>
+            <div class="info-value">{{ selectedReservation.depositAmount || 0 }} MAD</div>
+          </div>
+          <div class="info-tile">
+            <div class="info-label">Statut Actuel</div>
+            <div class="info-value" style="color: #60a5fa; font-weight: 700;">{{ selectedReservation.status }}</div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="font-size: 0.78rem; color: #94a3b8; font-weight: 700; margin-bottom: 8px;">ACTIONS SUR LE CONTRAT :</div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button *ngIf="selectedReservation.status !== 'EN_COURS'" class="btn btn-success-soft btn-sm" (click)="changeStatus(selectedReservation, 'EN_COURS')">
+            <i class="fa-solid fa-key"></i> Débuter Contrat (Sortie)
+          </button>
+          <button *ngIf="selectedReservation.status === 'EN_COURS'" class="btn btn-primary-soft btn-sm" (click)="changeStatus(selectedReservation, 'TERMINEE')">
+            <i class="fa-solid fa-flag-checkered"></i> Clôturer Restitution
+          </button>
+          <button *ngIf="selectedReservation.status !== 'ANNULEE'" class="btn btn-danger-soft btn-sm" (click)="changeStatus(selectedReservation, 'ANNULEE')">
+            <i class="fa-solid fa-ban"></i> Annuler
+          </button>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; margin-top: 16px;">
+        <button type="button" class="btn btn-secondary" (click)="closeDetailModal()">Fermer</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: CRÉER NOUVELLE RÉSERVATION (AVEC CALCUL EN TEMPS RÉEL)           -->
+  <!-- ========================================================================= -->
   <div class="modal-backdrop" [class.active]="isModalOpen">
-    <div class="modal-dialog glass-panel">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-calendar-plus blue-icon"></i> Créer une Nouvelle Réservation</h2>
-        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
+    <div class="modal-dialog glass-panel" style="max-width: 580px;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+        <h2 style="font-size: 1.25rem; color: #ffffff; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-calendar-plus" style="color: #60a5fa;"></i> Créer une Nouvelle Réservation
+        </h2>
+        <button class="btn-close-modal" (click)="closeModal()">&times;</button>
       </div>
 
       <form (ngSubmit)="submitReservation()">
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom: 16px;">
           <label class="form-label">Sélectionner un Véhicule</label>
-          <select class="form-control" [(ngModel)]="newReservation.vehicleId" name="vehicleId" required>
-            <option [ngValue]="null" disabled selected>-- Choisir un véhicule du parc --</option>
+          <select class="form-control" [(ngModel)]="newReservation.vehicleId" (change)="onVehicleSelectChange()" name="vehicleId" required>
+            <option [ngValue]="null" disabled>-- Choisir un véhicule disponible --</option>
             <option *ngFor="let v of vehicles" [ngValue]="v.id">{{ v.brand }} {{ v.model }} ({{ v.registrationNumber }}) - {{ v.dailyRate }} MAD/j</option>
           </select>
           <small *ngIf="vehicles.length === 0" style="color: #f87171; font-size: 0.78rem; margin-top: 4px; display: block;">
-            ⚠️ Aucun véhicule enregistré. Veuillez d'abord ajouter un véhicule dans le menu "Parc & Véhicules".
+            ⚠️ Aucun véhicule dans votre parc. Veuillez d'abord ajouter un véhicule dans le menu "Parc & Véhicules".
           </small>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Sélectionner un Client</label>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Sélectionner un Client (CRM)</label>
           <select class="form-control" [(ngModel)]="newReservation.clientId" name="clientId" required>
-            <option [ngValue]="null" disabled selected>-- Choisir un client CRM --</option>
+            <option [ngValue]="null" disabled>-- Choisir un client vérifié --</option>
             <option *ngFor="let c of clients" [ngValue]="c.id">{{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }} ({{ c.cinPassport || c.iceNumber }})</option>
           </select>
           <small *ngIf="clients.length === 0" style="color: #f87171; font-size: 0.78rem; margin-top: 4px; display: block;">
-            ⚠️ Aucun client enregistré. Veuillez d'abord ajouter un client dans le menu "CRM & Anti-Fraude".
+            ⚠️ Aucun client dans votre CRM. Veuillez d'abord ajouter un client dans le menu "CRM & Anti-Fraude".
           </small>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
           <div class="form-group">
-            <label class="form-label">Date de Début</label>
-            <input type="datetime-local" class="form-control" [(ngModel)]="newReservation.startDate" name="startDate">
+            <label class="form-label">Date & Heure de Début</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="newReservation.startDate" (ngModelChange)="calculatePrice()" name="startDate" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Date de Fin</label>
-            <input type="datetime-local" class="form-control" [(ngModel)]="newReservation.endDate" name="endDate">
+            <label class="form-label">Date & Heure de Fin</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="newReservation.endDate" (ngModelChange)="calculatePrice()" name="endDate" required>
           </div>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+        <!-- Realtime Price Estimation Box -->
+        <div class="price-estimation-box" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 0.8rem; color: #94a3b8;">Durée calculée : <b>{{ newReservation.totalDays }} Jour(s)</b></div>
+              <div style="font-size: 0.75rem; color: #60a5fa;">Tarification dégressive appliquée automatiquement</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.75rem; color: #94a3b8;">Montant Total Estimé</div>
+              <div style="font-size: 1.3rem; font-weight: 800; color: #34d399;">{{ newReservation.estimatedTotal }} MAD</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+          <div class="form-group">
+            <label class="form-label">Caution / Dépôt (MAD)</label>
+            <input type="number" class="form-control" [(ngModel)]="newReservation.depositAmount" name="depositAmount">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mode de Paiement</label>
+            <select class="form-control" [(ngModel)]="newReservation.paymentMethod" name="paymentMethod">
+              <option value="ESPECES">💵 Espèces</option>
+              <option value="CARTE_BANCAIRE">💳 Carte Bancaire (TPE)</option>
+              <option value="VIREMENT">🏦 Virement Bancaire</option>
+              <option value="CHEQUE">📝 Chèque</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
           <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
-          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Valider Réservation</button>
+          <button type="submit" class="btn btn-primary" [disabled]="vehicles.length === 0 || clients.length === 0">
+            <i class="fa-solid fa-check"></i> Valider la Réservation
+          </button>
         </div>
       </form>
+
     </div>
   </div>
+
 </div>
