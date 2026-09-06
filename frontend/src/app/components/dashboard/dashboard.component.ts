@@ -1,15 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
-import { ToastService } from '../../services/toast.service';
 import { ExecutiveKpis, Vehicle, Client, VehicleExpense, RadarFine } from '../../models/models';
+import { ReservationModalComponent } from '../shared/reservation-modal/reservation-modal.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReservationModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -66,16 +65,15 @@ export class DashboardComponent implements OnInit {
     }
   ];
 
+  isModalOpen = false;
+
   constructor(
-    private apiService: ApiService,
-    private toastService: ToastService,
-    private router: Router
+    private apiService: ApiService
   ) {}
 
   ngOnInit(): void {
     this.loadKpis();
     this.loadVehicles();
-    this.loadClients();
     this.loadExpenses();
     this.loadFines();
   }
@@ -89,15 +87,8 @@ export class DashboardComponent implements OnInit {
 
   loadVehicles(): void {
     this.apiService.get<Vehicle[]>('/vehicles').subscribe({
-      next: (data) => this.vehicles = data,
+      next: (data) => this.vehicles = data || [],
       error: (err) => console.error('Erreur Véhicules:', err)
-    });
-  }
-
-  loadClients(): void {
-    this.apiService.get<Client[]>('/clients').subscribe({
-      next: (data) => this.clients = data,
-      error: (err) => console.error('Erreur Clients:', err)
     });
   }
 
@@ -128,6 +119,11 @@ export class DashboardComponent implements OnInit {
   }
 
   openReservationModal(): void {
-    this.router.navigate(['/booking'], { queryParams: { create: 'true' } });
+    this.isModalOpen = true;
+  }
+
+  onReservationCreated(): void {
+    this.loadKpis();
+    this.loadVehicles();
   }
 }

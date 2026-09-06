@@ -175,4 +175,11 @@
       </div>
     </div>
   </div>
+
+  <!-- Reusable Reservation Modal Component -->
+  <app-reservation-modal 
+    [isOpen]="isModalOpen" 
+    (close)="isModalOpen = false" 
+    (created)="onReservationCreated()">
+  </app-reservation-modal>
 </div>

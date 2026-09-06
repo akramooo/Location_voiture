@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 import { Vehicle, Client } from '../../models/models';
+import { ReservationModalComponent } from '../shared/reservation-modal/reservation-modal.component';
 
 export interface TimelineDay {
   date: Date;
@@ -19,7 +20,7 @@ export interface TimelineDay {
 @Component({
   selector: 'app-booking',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReservationModalComponent],
   templateUrl: './booking.component.html',
   styleUrls: ['./booking.component.css']
 })
@@ -41,6 +42,8 @@ export class BookingComponent implements OnInit {
 
   // Modals
   isModalOpen = false;
+  selectedVehicleId: number | null = null;
+  selectedDayStr = '';
   isDetailModalOpen = false;
   isPrintContractModalOpen = false;
   selectedReservation: any = null;
@@ -55,26 +58,6 @@ export class BookingComponent implements OnInit {
     rc: 'RCS Casa B 802 345',
     patente: '7711A',
     tva: '20%'
-  };
-
-  // Form State
-  newReservation = {
-    vehicleId: null as number | null,
-    clientId: null as number | null,
-    startDate: '',
-    endDate: '',
-    pickupLocation: 'Agence',
-    returnLocation: 'Agence',
-    depositAmount: 500,
-    paidAmount: 0,
-    paymentMethod: 'ESPECES',
-    dailyRate: 350,
-    discountValue: 0,
-    discountType: 'MAD' as 'MAD' | 'PERCENT',
-    subTotal: 0,
-    discountAmountCalculated: 0,
-    estimatedTotal: 0,
-    totalDays: 0
   };
 
   constructor(
@@ -309,26 +292,18 @@ export class BookingComponent implements OnInit {
   // MODAL ACTIONS & WHATSAPP
   // ==========================================
   openCreateModal(vehicle?: Vehicle, dayStr?: string): void {
-    this.loadVehicles();
-    this.loadClients();
-
-    if (vehicle) {
-      this.newReservation.vehicleId = vehicle.id!;
-      this.newReservation.dailyRate = vehicle.dailyRate || 450;
-    }
-    if (dayStr) {
-      this.newReservation.startDate = `${dayStr}T09:00`;
-      const endDate = new Date(dayStr);
-      endDate.setDate(endDate.getDate() + 3);
-      const pad = (n: number) => n < 10 ? '0' + n : '' + n;
-      this.newReservation.endDate = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T18:00`;
-    }
-    this.calculatePrice();
+    this.selectedVehicleId = vehicle?.id || null;
+    this.selectedDayStr = dayStr || '';
     this.isModalOpen = true;
   }
 
   closeModal(): void {
     this.isModalOpen = false;
+  }
+
+  onReservationCreated(): void {
+    this.loadGanttData();
+    this.loadVehicles();
   }
 
   openDetailModal(item: any): void {
@@ -405,97 +380,6 @@ export class BookingComponent implements OnInit {
       error: () => {
         item.status = newStatus;
         this.toastService.success(`Statut mis à jour : ${newStatus}`, 'Réservation Modifiée');
-      }
-    });
-  }
-
-  // ==========================================
-  // RESERVATION CALCULATION & SUBMIT
-  // ==========================================
-  private initDefaultDates(): void {
-    const now = new Date();
-    const future = new Date();
-    future.setDate(future.getDate() + 3);
-
-    const pad = (n: number) => n < 10 ? '0' + n : '' + n;
-    this.newReservation.startDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T09:00`;
-    this.newReservation.endDate = `${future.getFullYear()}-${pad(future.getMonth() + 1)}-${pad(future.getDate())}T18:00`;
-    this.calculatePrice();
-  }
-
-  onVehicleSelectChange(): void {
-    const v = this.vehicles.find(veh => veh.id === this.newReservation.vehicleId);
-    if (v && v.dailyRate) {
-      this.newReservation.dailyRate = v.dailyRate;
-    }
-    this.calculatePrice();
-  }
-
-  calculatePrice(): void {
-    if (!this.newReservation.startDate || !this.newReservation.endDate) return;
-
-    const start = new Date(this.newReservation.startDate);
-    const end = new Date(this.newReservation.endDate);
-    const diffTime = end.getTime() - start.getTime();
-    let days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (days <= 0) days = 1;
-
-    this.newReservation.totalDays = days;
-    const dailyRate = Number(this.newReservation.dailyRate) || 0;
-    const subTotal = days * dailyRate;
-    this.newReservation.subTotal = subTotal;
-
-    // Remise manuelle configurable (% ou MAD)
-    let discountAmt = 0;
-    const discountVal = Number(this.newReservation.discountValue) || 0;
-    if (discountVal > 0) {
-      if (this.newReservation.discountType === 'PERCENT') {
-        discountAmt = (subTotal * discountVal) / 100;
-      } else {
-        discountAmt = discountVal;
-      }
-    }
-
-    discountAmt = Math.min(discountAmt, subTotal);
-    this.newReservation.discountAmountCalculated = Math.round(discountAmt);
-    this.newReservation.estimatedTotal = Math.max(0, Math.round(subTotal - discountAmt));
-  }
-
-  submitReservation(): void {
-    if (!this.newReservation.vehicleId) {
-      this.toastService.error('Veuillez sélectionner un véhicule dans votre parc.', 'Véhicule requis');
-      return;
-    }
-    if (!this.newReservation.clientId) {
-      this.toastService.error('Veuillez sélectionner un client dans votre CRM.', 'Client requis');
-      return;
-    }
-
-    const payload = {
-      vehicleId: this.newReservation.vehicleId,
-      clientId: this.newReservation.clientId,
-      startDate: this.newReservation.startDate.length === 16 ? this.newReservation.startDate + ':00' : this.newReservation.startDate,
-      endDate: this.newReservation.endDate.length === 16 ? this.newReservation.endDate + ':00' : this.newReservation.endDate,
-      pickupLocation: this.newReservation.pickupLocation || 'Agence',
-      returnLocation: this.newReservation.returnLocation || 'Agence',
-      dailyRate: this.newReservation.dailyRate,
-      discountValue: this.newReservation.discountValue || 0,
-      discountType: this.newReservation.discountType || 'MAD',
-      depositAmount: this.newReservation.depositAmount || 0,
-      paidAmount: this.newReservation.paidAmount || 0,
-      paymentMethod: this.newReservation.paymentMethod || 'ESPECES'
-    };
-
-    this.apiService.post('/reservations', payload).subscribe({
-      next: () => {
-        this.closeModal();
-        this.toastService.success('Réservation enregistrée sur le planning Gantt !', 'Gantt Mis à Jour');
-        this.loadGanttData();
-        this.loadVehicles();
-      },
-      error: (err) => {
-        const msg = err?.error?.message || 'Erreur lors de l\'enregistrement de la réservation.';
-        this.toastService.error(msg, 'Erreur Réservation');
       }
     });
   }
