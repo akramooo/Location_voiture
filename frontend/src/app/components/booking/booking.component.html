@@ -484,16 +484,41 @@
           </div>
         </div>
 
+        <!-- Tarif Journalier & Remise Manuelle (MAD ou %) -->
+        <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label">Tarif Journalier (MAD)</label>
+            <input type="number" class="form-control" [(ngModel)]="newReservation.dailyRate" (ngModelChange)="calculatePrice()" name="dailyRate" min="0" placeholder="350">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Remise / Réduction (Optionnel)</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="number" min="0" class="form-control" [(ngModel)]="newReservation.discountValue" (ngModelChange)="calculatePrice()" name="discountValue" placeholder="0">
+              <select class="form-control" style="max-width: 95px; font-weight: bold; background: #1e293b; color: #38bdf8;" [(ngModel)]="newReservation.discountType" (ngModelChange)="calculatePrice()" name="discountType">
+                <option value="MAD">MAD</option>
+                <option value="PERCENT">%</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <!-- Realtime Price Estimation Box -->
         <div class="price-estimation-box" style="margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-size: 0.8rem; color: #94a3b8;">Durée calculée : <b>{{ newReservation.totalDays }} Jour(s)</b></div>
-              <div style="font-size: 0.75rem; color: #60a5fa;">Tarification dégressive appliquée automatiquement</div>
+              <div style="font-size: 0.82rem; color: #94a3b8;">
+                Durée : <b style="color: #f1f5f9;">{{ newReservation.totalDays }} Jour(s)</b> × {{ newReservation.dailyRate }} MAD/j
+              </div>
+              <div *ngIf="newReservation.discountAmountCalculated > 0" style="font-size: 0.75rem; color: #fbbf24; margin-top: 2px;">
+                🏷️ Remise accordée : <b>-{{ newReservation.discountAmountCalculated }} MAD</b> ({{ newReservation.discountValue }}{{ newReservation.discountType === 'PERCENT' ? '%' : ' MAD' }})
+              </div>
+              <div *ngIf="newReservation.discountAmountCalculated === 0" style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                Aucune remise appliquée
+              </div>
             </div>
             <div style="text-align: right;">
-              <div style="font-size: 0.75rem; color: #94a3b8;">Montant Total Estimé</div>
-              <div style="font-size: 1.3rem; font-weight: 800; color: #34d399;">{{ newReservation.estimatedTotal }} MAD</div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">Montant Total à Payer</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #34d399;">{{ newReservation.estimatedTotal }} MAD</div>
             </div>
           </div>
         </div>

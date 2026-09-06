@@ -67,9 +67,13 @@ export class BookingComponent implements OnInit {
     depositAmount: 500,
     paidAmount: 0,
     paymentMethod: 'ESPECES',
-    dailyRate: 450,
-    estimatedTotal: 1350,
-    totalDays: 3
+    dailyRate: 350,
+    discountValue: 0,
+    discountType: 'MAD' as 'MAD' | 'PERCENT',
+    subTotal: 0,
+    discountAmountCalculated: 0,
+    estimatedTotal: 0,
+    totalDays: 0
   };
 
   constructor(
@@ -428,15 +432,24 @@ export class BookingComponent implements OnInit {
     if (days <= 0) days = 1;
 
     this.newReservation.totalDays = days;
+    const dailyRate = Number(this.newReservation.dailyRate) || 0;
+    const subTotal = days * dailyRate;
+    this.newReservation.subTotal = subTotal;
 
-    // Dégressivité tarifaire SaaS
-    let factor = 1.0;
-    if (days >= 4 && days <= 7) factor = 0.90; // -10%
-    else if (days >= 8 && days <= 30) factor = 0.80; // -20%
-    else if (days > 30) factor = 0.70; // -30% LLD
+    // Remise manuelle configurable (% ou MAD)
+    let discountAmt = 0;
+    const discountVal = Number(this.newReservation.discountValue) || 0;
+    if (discountVal > 0) {
+      if (this.newReservation.discountType === 'PERCENT') {
+        discountAmt = (subTotal * discountVal) / 100;
+      } else {
+        discountAmt = discountVal;
+      }
+    }
 
-    const appliedRate = (this.newReservation.dailyRate || 450) * factor;
-    this.newReservation.estimatedTotal = Math.round(appliedRate * days);
+    discountAmt = Math.min(discountAmt, subTotal);
+    this.newReservation.discountAmountCalculated = Math.round(discountAmt);
+    this.newReservation.estimatedTotal = Math.max(0, Math.round(subTotal - discountAmt));
   }
 
   submitReservation(): void {
@@ -456,7 +469,10 @@ export class BookingComponent implements OnInit {
       endDate: this.newReservation.endDate.length === 16 ? this.newReservation.endDate + ':00' : this.newReservation.endDate,
       pickupLocation: this.newReservation.pickupLocation || 'Agence',
       returnLocation: this.newReservation.returnLocation || 'Agence',
-      depositAmount: this.newReservation.depositAmount || 500,
+      dailyRate: this.newReservation.dailyRate,
+      discountValue: this.newReservation.discountValue || 0,
+      discountType: this.newReservation.discountType || 'MAD',
+      depositAmount: this.newReservation.depositAmount || 0,
       paidAmount: this.newReservation.paidAmount || 0,
       paymentMethod: this.newReservation.paymentMethod || 'ESPECES'
     };

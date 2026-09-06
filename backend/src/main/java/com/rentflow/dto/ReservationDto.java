@@ -23,6 +23,8 @@ public class ReservationDto {
     private String rateSeason;
     private Double dailyRate;
     private Long totalDays;
+    private Double discountAmount;
+    private String discountType;
     private Double totalAmount;
     private Double depositAmount;
     private Double paidAmount;

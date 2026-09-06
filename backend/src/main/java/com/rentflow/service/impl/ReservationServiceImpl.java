@@ -101,15 +101,31 @@ public class ReservationServiceImpl implements ReservationService {
         long days = ChronoUnit.DAYS.between(startDate.toLocalDate(), endDate.toLocalDate());
         if (days <= 0) days = 1;
 
-        // Tarification dynamique (dégressif selon durée: 1-3j, 4-7j, 8-30j, LLD)
-        double baseRate = vehicle.getDailyRate() != null ? vehicle.getDailyRate() : 350.0;
-        double discountFactor = 1.0;
-        if (days >= 4 && days <= 7) discountFactor = 0.90; // -10%
-        else if (days >= 8 && days <= 30) discountFactor = 0.80; // -20%
-        else if (days > 30) discountFactor = 0.70; // -30% (LLD)
+        // Tarification standard sans réduction automatique
+        double baseRate = payload.containsKey("dailyRate") && payload.get("dailyRate") != null
+                ? Double.parseDouble(payload.get("dailyRate").toString())
+                : (vehicle.getDailyRate() != null ? vehicle.getDailyRate() : 350.0);
 
-        double dailyRateApplied = baseRate * discountFactor;
-        double totalAmount = dailyRateApplied * days;
+        double subTotal = baseRate * days;
+
+        // Gestion de la remise manuelle (MAD ou %)
+        double discountAmount = 0.0;
+        String discountType = payload.containsKey("discountType") && payload.get("discountType") != null
+                ? payload.get("discountType").toString()
+                : "MAD";
+
+        if (payload.containsKey("discountValue") && payload.get("discountValue") != null) {
+            double discountVal = Double.parseDouble(payload.get("discountValue").toString());
+            if (discountVal > 0) {
+                if ("PERCENT".equalsIgnoreCase(discountType) || "%".equals(discountType)) {
+                    discountAmount = (subTotal * discountVal) / 100.0;
+                } else {
+                    discountAmount = discountVal;
+                }
+            }
+        }
+        discountAmount = Math.min(discountAmount, subTotal);
+        double totalAmount = Math.max(0.0, subTotal - discountAmount);
 
         Double depositAmount = payload.containsKey("depositAmount") ? Double.parseDouble(payload.get("depositAmount").toString()) : 500.0;
         Double paidAmount = payload.containsKey("paidAmount") ? Double.parseDouble(payload.get("paidAmount").toString()) : 0.0;
@@ -126,8 +142,10 @@ public class ReservationServiceImpl implements ReservationService {
                 .pickupLocation(payload.getOrDefault("pickupLocation", "Agence").toString())
                 .returnLocation(payload.getOrDefault("returnLocation", "Agence").toString())
                 .rateSeason(payload.getOrDefault("rateSeason", "MOYENNE").toString())
-                .dailyRate(dailyRateApplied)
+                .dailyRate(baseRate)
                 .totalDays(days)
+                .discountAmount(discountAmount)
+                .discountType(discountType)
                 .totalAmount(totalAmount)
                 .depositAmount(depositAmount)
                 .paidAmount(paidAmount)

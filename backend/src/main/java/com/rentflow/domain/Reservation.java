@@ -43,6 +43,10 @@ public class Reservation {
     private Long totalDays;
 
     @Builder.Default
+    private Double discountAmount = 0.0;
+    private String discountType; // MAD, PERCENT
+
+    @Builder.Default
     private Double optionsAmount = 0.0;
     @Builder.Default
     private Double totalAmount = 0.0;
