@@ -78,7 +78,10 @@ export class ChequeComponent implements OnInit {
   loadReservations(): void {
     this.apiService.get<Reservation[]>('/reservations').subscribe({
       next: (data) => {
-        this.reservations = data || [];
+        // Filtrer STRICTEMENT les réservations dont le mode de paiement est CHEQUE
+        this.reservations = (data || []).filter(r => 
+          r.paymentMethod && r.paymentMethod.toString().toUpperCase() === 'CHEQUE'
+        );
       },
       error: () => {
         this.reservations = [];

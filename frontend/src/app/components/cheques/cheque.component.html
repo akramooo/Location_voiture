@@ -109,11 +109,11 @@
           <select class="form-control" [(ngModel)]="selectedReservationId" (change)="onReservationChange()" name="selectedReservation">
             <option [ngValue]="null">-- Aucune réservation (Chèque libre / Autre) --</option>
             <option *ngFor="let r of reservations" [ngValue]="r.id">
-              [{{ r.reservationNumber }}] {{ r.clientName }} - {{ r.vehicleName || 'Véhicule' }} (Caution: {{ r.depositAmount || 0 }} MAD | Mode: {{ r.paymentMethod || 'Non spécifié' }})
+              [{{ r.reservationNumber }}] {{ r.clientName }} - {{ r.vehicleName || 'Véhicule' }} (Caution: {{ r.depositAmount || 0 }} MAD)
             </option>
           </select>
           <small *ngIf="reservations.length === 0" style="color: #94a3b8; font-size: 0.75rem; margin-top: 4px; display: block;">
-            ℹ️ Aucune réservation trouvée dans la base de données.
+            ℹ️ Aucune réservation avec mode de paiement "Chèque" trouvée dans la base de données.
           </small>
         </div>
 
