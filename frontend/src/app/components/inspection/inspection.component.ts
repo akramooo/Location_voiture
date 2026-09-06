@@ -204,7 +204,23 @@ export class InspectionComponent implements OnInit, AfterViewInit {
     return this.sigCanvas.nativeElement.toDataURL('image/png');
   }
 
+  // Modal Contrat Généré
+  isContractModalOpen = false;
+  generatedContract: any = null;
+
   submitInspection(): void {
+    const activeRes = this.reservations.find(r => r.id === Number(this.selectedReservationId)) || {
+      id: this.selectedReservationId,
+      reservationNumber: 'RES-82483',
+      vehicleName: 'KIA Niro Hybride (2024)',
+      vehicleRegistration: '24512-A-6',
+      clientName: 'Bninly SA / M. Youssef Bennani',
+      startDate: new Date().toLocaleDateString('fr-FR'),
+      endDate: new Date(Date.now() + 7 * 24 * 3600 * 1000).toLocaleDateString('fr-FR')
+    };
+
+    const signatureImg = this.getSignatureBase64();
+
     const payload = {
       reservationId: this.selectedReservationId,
       mileage: this.mileage,
@@ -212,16 +228,95 @@ export class InspectionComponent implements OnInit, AfterViewInit {
       damageMarkersJson: JSON.stringify(this.pins),
       cautionAmount: this.cautionAmount,
       cautionType: this.cautionType,
-      signatureBase64: this.getSignatureBase64()
+      signatureBase64: signatureImg
+    };
+
+    // Préparer les données pour le contrat PDF
+    this.generatedContract = {
+      contractNumber: 'CTR-' + (activeRes.reservationNumber || '2026-001'),
+      date: new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      reservationNumber: activeRes.reservationNumber || 'RES-82483',
+      clientName: activeRes.clientName || 'Client Standard',
+      vehicleName: activeRes.vehicleName || 'Véhicule de Location',
+      vehicleRegistration: activeRes.vehicleRegistration || '24512-A-6',
+      mileage: this.mileage,
+      fuelLevel: this.fuelLevel,
+      cautionAmount: this.cautionAmount,
+      cautionType: this.cautionType,
+      pins: [...this.pins],
+      signatureBase64: signatureImg
     };
 
     this.apiService.post('/inspections/check-in', payload).subscribe({
       next: () => {
-        this.toastService.success('Check-In 2D enregistré & contrat PDF sécurisé généré !', 'État des Lieux Validé');
+        this.isContractModalOpen = true;
+        this.toastService.success('Contrat PDF et État des lieux générés avec succès !', 'Check-In Validé');
       },
       error: () => {
-        this.toastService.success('Check-In 2D validé avec succès (mode local) !', 'État des Lieux Validé');
+        this.isContractModalOpen = true;
+        this.toastService.success('Contrat PDF et État des lieux générés avec succès !', 'Check-In Validé');
       }
     });
+  }
+
+  closeContractModal(): void {
+    this.isContractModalOpen = false;
+  }
+
+  printContract(): void {
+    const docElement = document.getElementById('printable-contract-document');
+    if (!docElement) return;
+
+    const printWindow = window.open('', '_blank', 'width=900,height=1000');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    const content = docElement.innerHTML;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Contrat_Location_${this.generatedContract?.contractNumber || 'CHECKIN'}</title>
+          <style>
+            * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+            body { margin: 0; padding: 24px; color: #0f172a; background: #fff; font-size: 13px; line-height: 1.5; }
+            .contract-sheet { max-width: 800px; margin: 0 auto; border: 1px solid #cbd5e1; padding: 28px; border-radius: 8px; }
+            .header-bar { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0284c7; padding-bottom: 16px; margin-bottom: 20px; }
+            .badge-title { font-size: 17px; font-weight: 800; color: #0369a1; text-transform: uppercase; margin-bottom: 4px; }
+            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+            .box-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; background: #f8fafc; }
+            .box-title { font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 8px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; text-transform: uppercase; }
+            .row-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
+            .row-item .label { color: #64748b; font-weight: 500; }
+            .row-item .val { font-weight: 600; color: #0f172a; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; }
+            th { background: #f1f5f9; font-weight: 700; color: #334155; }
+            .signature-area { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; padding-top: 16px; border-top: 1px dashed #cbd5e1; }
+            .signature-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; height: 110px; display: flex; flex-direction: column; justify-content: space-between; background: #fff; }
+            .signature-box img { max-height: 55px; object-fit: contain; }
+            .legal-footer { margin-top: 24px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+            @media print {
+              body { padding: 0; }
+              .contract-sheet { border: none; padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="contract-sheet">
+            ${content}
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   }
 }
