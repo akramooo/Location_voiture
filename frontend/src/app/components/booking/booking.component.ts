@@ -78,13 +78,6 @@ export class BookingComponent implements OnInit {
     this.loadGanttData();
     this.loadVehicles();
     this.loadClients();
-
-    // Ouvrir automatiquement le pop-up si redirigé depuis le Dashboard (?create=true)
-    this.route.queryParams.subscribe(params => {
-      if (params['create'] === 'true' || params['new'] === 'true') {
-        this.openCreateModal();
-      }
-    });
   }
 
   // ==========================================
