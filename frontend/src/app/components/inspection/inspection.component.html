@@ -1,56 +1,367 @@
 <div class="inspection-component fade-in">
   <div class="inspection-header" style="margin-bottom: 24px;">
-    <h1 class="page-title">Digital Check-In 2D & Signature Tactile</h1>
-    <p class="page-subtitle">Relevé des dommages sur carrosserie 2D, jauge carburant, photo & contrat PDF sécurisé.</p>
+    <h1 class="page-title"><i class="fa-solid fa-car-burst text-primary"></i> Digital Check-In 2D Multi-Angles & Signature</h1>
+    <p class="page-subtitle">Relevé précis des dommages sur 5 angles carrosserie (Gauche, Droit, Avant, Arrière, Toit), jauge carburant & contrat sécurisé.</p>
   </div>
 
-  <div class="inspection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-    <!-- Box 1: Carrosserie 2D -->
+  <div class="inspection-grid" style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 24px;">
+    
+    <!-- Box 1: Schéma Carrosserie Multi-Angles -->
     <div class="glass-panel" style="padding: 24px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3><i class="fa-solid fa-car-burst blue-icon"></i> Schéma Carrosserie 2D (Repères de Dommages)</h3>
-        <button class="btn btn-secondary btn-sm" (click)="clearPins()"><i class="fa-solid fa-rotate-left"></i> Effacer</button>
+      
+      <!-- Barre d'onglets de sélection de vue -->
+      <div class="view-tabs">
+        <button *ngFor="let v of viewsList" 
+                class="view-tab-btn" 
+                [class.active]="activeView === v.id" 
+                (click)="setView(v.id)">
+          <i class="fa-solid" [ngClass]="v.icon"></i> {{ v.label }}
+          <span *ngIf="v.id === 'overview' && pins.length > 0" class="badge-count" style="background:#ef4444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:10px;">{{ pins.length }}</span>
+          <span *ngIf="v.id !== 'overview' && getPinsForView(v.id).length > 0" class="badge-count" style="background:#ef4444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:10px;">{{ getPinsForView(v.id).length }}</span>
+        </button>
       </div>
 
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-        Cliquez directement sur le schéma du véhicule ci-dessous pour placer des repères d'impacts ou rayures.
-      </p>
+      <!-- Sélecteur de type d'impact -->
+      <div class="damage-type-selector">
+        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-right: 4px;">Type d'anomalie :</span>
+        <button *ngFor="let dt of damageTypesConfig" 
+                type="button" 
+                class="damage-type-pill" 
+                [class.active]="selectedDamageType === dt.type"
+                [style.background]="selectedDamageType === dt.type ? dt.color : 'rgba(255,255,255,0.06)'"
+                [style.color]="selectedDamageType === dt.type ? '#ffffff' : 'var(--text-main)'"
+                [style.borderColor]="selectedDamageType === dt.type ? '#ffffff' : 'rgba(255,255,255,0.1)'"
+                (click)="setDamageType(dt.type)">
+          <i class="fa-solid" [ngClass]="dt.icon"></i> {{ dt.label }}
+        </button>
+      </div>
 
-      <div class="car-damage-box" (click)="onCanvasClick($event)" style="position: relative; border: 2px dashed rgba(255,255,255,0.2); border-radius: 12px; height: 260px; display: flex; justify-content: center; align-items: center; cursor: crosshair; background: rgba(0,0,0,0.2);">
-        <img src="https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=600" alt="Car Blueprint" style="max-height: 100%; max-width: 100%; opacity: 0.6; pointer-events: none;">
+      <!-- Instruction & Bouton Reset -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-size: 0.82rem; color: var(--text-muted);">
+          <i class="fa-solid fa-crosshairs text-primary"></i> Cliquez sur la carrosserie pour marquer un impact.
+        </span>
+        <button class="btn btn-secondary btn-sm" (click)="clearPins()" [disabled]="pins.length === 0" style="font-size: 0.78rem; padding: 4px 10px;">
+          <i class="fa-solid fa-rotate-left"></i> Tout effacer
+        </button>
+      </div>
+
+      <!-- VUE D'ENSEMBLE (5 VUES RÉUNIES) -->
+      <div *ngIf="activeView === 'overview'" class="blueprint-grid-all">
         
-        <!-- Pins -->
-        <div *ngFor="let p of pins; let i = index" class="damage-pin" [style.left.%]="p.x" [style.top.%]="p.y" style="position: absolute; width: 22px; height: 22px; background: #ef4444; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; transform: translate(-50%, -50%); border: 2px solid white; box-shadow: 0 0 10px rgba(239,68,68,0.8);">
-          {{ i + 1 }}
+        <!-- 1. Profil Gauche -->
+        <div class="blueprint-card" (click)="onAngleClick($event, 'left')">
+          <span class="blueprint-card-title"><i class="fa-solid fa-arrow-left"></i> Profil Gauche</span>
+          <div class="car-svg-container">
+            <svg viewBox="0 0 300 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 30,75 C 30,55 45,55 60,55 L 90,50 L 140,25 L 210,25 L 250,50 L 280,55 C 290,55 295,65 295,75 L 295,80 L 260,80 C 260,68 240,68 240,80 L 100,80 C 100,68 80,68 80,80 L 25,80 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+              <path d="M 95,50 L 142,28 L 175,28 L 175,50 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+              <path d="M 180,28 L 208,28 L 243,50 L 180,50 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+              <circle cx="90" cy="80" r="14" fill="#0f172a" stroke="#94a3b8" stroke-width="3"/>
+              <circle cx="90" cy="80" r="6" fill="#64748b"/>
+              <circle cx="250" cy="80" r="14" fill="#0f172a" stroke="#94a3b8" stroke-width="3"/>
+              <circle cx="250" cy="80" r="6" fill="#64748b"/>
+              <line x1="177" y1="28" x2="177" y2="78" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3 3"/>
+              <rect x="155" y="54" width="12" height="3" rx="1.5" fill="#e2e8f0"/>
+              <rect x="210" y="54" width="12" height="3" rx="1.5" fill="#e2e8f0"/>
+            </svg>
+          </div>
+          <!-- Repères sur Profil Gauche -->
+          <ng-container *ngFor="let p of pins; let i = index">
+            <div *ngIf="p.view === 'left'" 
+                 class="damage-pin-marker" 
+                 [style.left.%]="p.x" 
+                 [style.top.%]="p.y" 
+                 [style.background]="p.color"
+                 (click)="removePin(i, $event)" 
+                 [title]="'Impact #' + p.id + ' (' + p.typeLabel + ') - Cliquer pour supprimer'">
+              {{ p.id }}
+            </div>
+          </ng-container>
+        </div>
+
+        <!-- 2. Profil Droit -->
+        <div class="blueprint-card" (click)="onAngleClick($event, 'right')">
+          <span class="blueprint-card-title"><i class="fa-solid fa-arrow-right"></i> Profil Droit</span>
+          <div class="car-svg-container">
+            <svg viewBox="0 0 300 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g transform="scale(-1, 1) translate(-300, 0)">
+                <path d="M 30,75 C 30,55 45,55 60,55 L 90,50 L 140,25 L 210,25 L 250,50 L 280,55 C 290,55 295,65 295,75 L 295,80 L 260,80 C 260,68 240,68 240,80 L 100,80 C 100,68 80,68 80,80 L 25,80 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+                <path d="M 95,50 L 142,28 L 175,28 L 175,50 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+                <path d="M 180,28 L 208,28 L 243,50 L 180,50 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+                <circle cx="90" cy="80" r="14" fill="#0f172a" stroke="#94a3b8" stroke-width="3"/>
+                <circle cx="90" cy="80" r="6" fill="#64748b"/>
+                <circle cx="250" cy="80" r="14" fill="#0f172a" stroke="#94a3b8" stroke-width="3"/>
+                <circle cx="250" cy="80" r="6" fill="#64748b"/>
+                <line x1="177" y1="28" x2="177" y2="78" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3 3"/>
+                <rect x="155" y="54" width="12" height="3" rx="1.5" fill="#e2e8f0"/>
+                <rect x="210" y="54" width="12" height="3" rx="1.5" fill="#e2e8f0"/>
+              </g>
+            </svg>
+          </div>
+          <!-- Repères sur Profil Droit -->
+          <ng-container *ngFor="let p of pins; let i = index">
+            <div *ngIf="p.view === 'right'" 
+                 class="damage-pin-marker" 
+                 [style.left.%]="p.x" 
+                 [style.top.%]="p.y" 
+                 [style.background]="p.color"
+                 (click)="removePin(i, $event)" 
+                 [title]="'Impact #' + p.id + ' (' + p.typeLabel + ') - Cliquer pour supprimer'">
+              {{ p.id }}
+            </div>
+          </ng-container>
+        </div>
+
+        <!-- 3. Face Avant -->
+        <div class="blueprint-card" (click)="onAngleClick($event, 'front')">
+          <span class="blueprint-card-title"><i class="fa-solid fa-arrow-up"></i> Face Avant</span>
+          <div class="car-svg-container">
+            <svg viewBox="0 0 160 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 35,30 L 125,30 L 145,55 L 148,85 L 140,95 L 20,95 L 12,85 L 15,55 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+              <path d="M 38,34 L 122,34 L 132,55 L 28,55 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+              <polygon points="20,60 45,60 40,70 18,68" fill="#fef08a" stroke="#ca8a04" stroke-width="1"/>
+              <polygon points="140,60 115,60 120,70 142,68" fill="#fef08a" stroke="#ca8a04" stroke-width="1"/>
+              <rect x="52" y="62" width="56" height="12" rx="2" fill="#0f172a" stroke="#38bdf8" stroke-width="1"/>
+              <rect x="58" y="80" width="44" height="10" fill="#ffffff" stroke="#334155" stroke-width="1"/>
+            </svg>
+          </div>
+          <!-- Repères sur Avant -->
+          <ng-container *ngFor="let p of pins; let i = index">
+            <div *ngIf="p.view === 'front'" 
+                 class="damage-pin-marker" 
+                 [style.left.%]="p.x" 
+                 [style.top.%]="p.y" 
+                 [style.background]="p.color"
+                 (click)="removePin(i, $event)" 
+                 [title]="'Impact #' + p.id + ' (' + p.typeLabel + ')'">
+              {{ p.id }}
+            </div>
+          </ng-container>
+        </div>
+
+        <!-- 4. Face Arrière -->
+        <div class="blueprint-card" (click)="onAngleClick($event, 'rear')">
+          <span class="blueprint-card-title"><i class="fa-solid fa-arrow-down"></i> Face Arrière</span>
+          <div class="car-svg-container">
+            <svg viewBox="0 0 160 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 35,30 L 125,30 L 145,55 L 148,85 L 140,95 L 20,95 L 12,85 L 15,55 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+              <path d="M 38,34 L 122,34 L 132,55 L 28,55 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+              <polygon points="18,60 42,60 40,72 18,72" fill="#ef4444" stroke="#991b1b" stroke-width="1"/>
+              <polygon points="142,60 118,60 120,72 142,72" fill="#ef4444" stroke="#991b1b" stroke-width="1"/>
+              <rect x="58" y="75" width="44" height="10" fill="#ffffff" stroke="#334155" stroke-width="1"/>
+              <ellipse cx="80" cy="62" rx="6" ry="4" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <!-- Repères sur Arrière -->
+          <ng-container *ngFor="let p of pins; let i = index">
+            <div *ngIf="p.view === 'rear'" 
+                 class="damage-pin-marker" 
+                 [style.left.%]="p.x" 
+                 [style.top.%]="p.y" 
+                 [style.background]="p.color"
+                 (click)="removePin(i, $event)" 
+                 [title]="'Impact #' + p.id + ' (' + p.typeLabel + ')'">
+              {{ p.id }}
+            </div>
+          </ng-container>
+        </div>
+
+        <!-- 5. Toit / Dessus (Pleine largeur) -->
+        <div class="blueprint-card" style="grid-column: 1 / -1; min-height: 160px;" (click)="onAngleClick($event, 'top')">
+          <span class="blueprint-card-title"><i class="fa-solid fa-car"></i> Toit & Capot (Vue de Dessus)</span>
+          <div class="car-svg-container">
+            <svg viewBox="0 0 320 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Contour carrosserie vue de dessus -->
+              <path d="M 25,60 C 25,45 45,30 80,28 L 240,28 C 275,30 295,45 295,60 C 295,75 275,90 240,92 L 80,92 C 45,90 25,75 25,60 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+              <!-- Rétroviseurs -->
+              <rect x="95" y="16" width="16" height="10" rx="3" fill="#0284c7" stroke="#38bdf8" stroke-width="1"/>
+              <rect x="95" y="94" width="16" height="10" rx="3" fill="#0284c7" stroke="#38bdf8" stroke-width="1"/>
+              <!-- Pare-brise avant -->
+              <path d="M 90,32 L 115,36 L 115,84 L 90,88 Z" fill="#0284c7" fill-opacity="0.3" stroke="#38bdf8" stroke-width="1.5"/>
+              <!-- Toit / Pavillon -->
+              <rect x="120" y="36" width="80" height="48" rx="6" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+              <!-- Lunette arrière -->
+              <path d="M 205,36 L 225,32 L 225,88 L 205,84 Z" fill="#0284c7" fill-opacity="0.3" stroke="#38bdf8" stroke-width="1.5"/>
+              <!-- Lignes capot -->
+              <line x1="45" y1="42" x2="85" y2="40" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 2"/>
+              <line x1="45" y1="78" x2="85" y2="80" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 2"/>
+            </svg>
+          </div>
+          <!-- Repères sur Toit -->
+          <ng-container *ngFor="let p of pins; let i = index">
+            <div *ngIf="p.view === 'top'" 
+                 class="damage-pin-marker" 
+                 [style.left.%]="p.x" 
+                 [style.top.%]="p.y" 
+                 [style.background]="p.color"
+                 (click)="removePin(i, $event)" 
+                 [title]="'Impact #' + p.id + ' (' + p.typeLabel + ')'">
+              {{ p.id }}
+            </div>
+          </ng-container>
+        </div>
+
+      </div>
+
+      <!-- VUE ZOOMÉE INDIVIDUELLE (si un onglet spécifique est cliqué) -->
+      <div *ngIf="activeView !== 'overview'" class="blueprint-card blueprint-single-card" (click)="onAngleClick($event, activeView)">
+        <span class="blueprint-card-title">
+          Vue Agrandie : {{ activeView | uppercase }}
+        </span>
+
+        <div class="car-svg-container" style="max-height: 320px;">
+          
+          <!-- Zoom Profil Gauche -->
+          <svg *ngIf="activeView === 'left'" viewBox="0 0 300 100" fill="none" style="width: 100%; height: 100%;">
+            <path d="M 30,75 C 30,55 45,55 60,55 L 90,50 L 140,25 L 210,25 L 250,50 L 280,55 C 290,55 295,65 295,75 L 295,80 L 260,80 C 260,68 240,68 240,80 L 100,80 C 100,68 80,68 80,80 L 25,80 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2.5"/>
+            <path d="M 95,50 L 142,28 L 175,28 L 175,50 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+            <path d="M 180,28 L 208,28 L 243,50 L 180,50 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+            <circle cx="90" cy="80" r="14" fill="#0f172a" stroke="#94a3b8" stroke-width="3"/>
+            <circle cx="90" cy="80" r="6" fill="#64748b"/>
+            <circle cx="250" cy="80" r="14" fill="#0f172a" stroke="#94a3b8" stroke-width="3"/>
+            <circle cx="250" cy="80" r="6" fill="#64748b"/>
+            <line x1="177" y1="28" x2="177" y2="78" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <rect x="155" y="54" width="12" height="3" rx="1.5" fill="#e2e8f0"/>
+            <rect x="210" y="54" width="12" height="3" rx="1.5" fill="#e2e8f0"/>
+          </svg>
+
+          <!-- Zoom Profil Droit -->
+          <svg *ngIf="activeView === 'right'" viewBox="0 0 300 100" fill="none" style="width: 100%; height: 100%;">
+            <g transform="scale(-1, 1) translate(-300, 0)">
+              <path d="M 30,75 C 30,55 45,55 60,55 L 90,50 L 140,25 L 210,25 L 250,50 L 280,55 C 290,55 295,65 295,75 L 295,80 L 260,80 C 260,68 240,68 240,80 L 100,80 C 100,68 80,68 80,80 L 25,80 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2.5"/>
+              <path d="M 95,50 L 142,28 L 175,28 L 175,50 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+              <path d="M 180,28 L 208,28 L 243,50 L 180,50 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+              <circle cx="90" cy="80" r="14" fill="#0f172a" stroke="#94a3b8" stroke-width="3"/>
+              <circle cx="90" cy="80" r="6" fill="#64748b"/>
+              <circle cx="250" cy="80" r="14" fill="#0f172a" stroke="#94a3b8" stroke-width="3"/>
+              <circle cx="250" cy="80" r="6" fill="#64748b"/>
+              <line x1="177" y1="28" x2="177" y2="78" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3 3"/>
+              <rect x="155" y="54" width="12" height="3" rx="1.5" fill="#e2e8f0"/>
+              <rect x="210" y="54" width="12" height="3" rx="1.5" fill="#e2e8f0"/>
+            </g>
+          </svg>
+
+          <!-- Zoom Face Avant -->
+          <svg *ngIf="activeView === 'front'" viewBox="0 0 160 110" fill="none" style="width: 100%; height: 100%;">
+            <path d="M 35,30 L 125,30 L 145,55 L 148,85 L 140,95 L 20,95 L 12,85 L 15,55 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2.5"/>
+            <path d="M 38,34 L 122,34 L 132,55 L 28,55 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+            <polygon points="20,60 45,60 40,70 18,68" fill="#fef08a" stroke="#ca8a04" stroke-width="1"/>
+            <polygon points="140,60 115,60 120,70 142,68" fill="#fef08a" stroke="#ca8a04" stroke-width="1"/>
+            <rect x="52" y="62" width="56" height="12" rx="2" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+            <rect x="58" y="80" width="44" height="10" fill="#ffffff" stroke="#334155" stroke-width="1"/>
+          </svg>
+
+          <!-- Zoom Face Arrière -->
+          <svg *ngIf="activeView === 'rear'" viewBox="0 0 160 110" fill="none" style="width: 100%; height: 100%;">
+            <path d="M 35,30 L 125,30 L 145,55 L 148,85 L 140,95 L 20,95 L 12,85 L 15,55 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2.5"/>
+            <path d="M 38,34 L 122,34 L 132,55 L 28,55 Z" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1.5"/>
+            <polygon points="18,60 42,60 40,72 18,72" fill="#ef4444" stroke="#991b1b" stroke-width="1"/>
+            <polygon points="142,60 118,60 120,72 142,72" fill="#ef4444" stroke="#991b1b" stroke-width="1"/>
+            <rect x="58" y="75" width="44" height="10" fill="#ffffff" stroke="#334155" stroke-width="1"/>
+            <ellipse cx="80" cy="62" rx="6" ry="4" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+          </svg>
+
+          <!-- Zoom Toit / Dessus -->
+          <svg *ngIf="activeView === 'top'" viewBox="0 0 320 120" fill="none" style="width: 100%; height: 100%;">
+            <path d="M 25,60 C 25,45 45,30 80,28 L 240,28 C 275,30 295,45 295,60 C 295,75 275,90 240,92 L 80,92 C 45,90 25,75 25,60 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2.5"/>
+            <rect x="95" y="16" width="16" height="10" rx="3" fill="#0284c7" stroke="#38bdf8" stroke-width="1"/>
+            <rect x="95" y="94" width="16" height="10" rx="3" fill="#0284c7" stroke="#38bdf8" stroke-width="1"/>
+            <path d="M 90,32 L 115,36 L 115,84 L 90,88 Z" fill="#0284c7" fill-opacity="0.3" stroke="#38bdf8" stroke-width="1.5"/>
+            <rect x="120" y="36" width="80" height="48" rx="6" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+            <path d="M 205,36 L 225,32 L 225,88 L 205,84 Z" fill="#0284c7" fill-opacity="0.3" stroke="#38bdf8" stroke-width="1.5"/>
+            <line x1="45" y1="42" x2="85" y2="40" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 2"/>
+            <line x1="45" y1="78" x2="85" y2="80" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 2"/>
+          </svg>
+
+        </div>
+
+        <!-- Repères pour la vue zoomée -->
+        <ng-container *ngFor="let p of pins; let i = index">
+          <div *ngIf="p.view === activeView" 
+               class="damage-pin-marker" 
+               [style.left.%]="p.x" 
+               [style.top.%]="p.y" 
+               [style.background]="p.color"
+               (click)="removePin(i, $event)" 
+               [title]="'Impact #' + p.id + ' (' + p.typeLabel + ') - Cliquer pour supprimer'">
+            {{ p.id }}
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Liste récapitulative des dommages enregistrés -->
+      <div style="margin-top: 18px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="font-size: 0.9rem; font-weight: 700; color: #60a5fa;">
+            <i class="fa-solid fa-list-check"></i> Dommages relevés ({{ pins.length }})
+          </h4>
+        </div>
+
+        <div *ngIf="pins.length === 0" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 8px; font-style: italic;">
+          Aucun dommage relevé. Véhicule en parfait état.
+        </div>
+
+        <div *ngIf="pins.length > 0" style="max-height: 140px; overflow-y: auto; margin-top: 8px;">
+          <table class="damage-list-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Angle</th>
+                <th>Type</th>
+                <th>Position (X, Y)</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of pins; let idx = index">
+                <td><strong [style.color]="p.color">#{{ p.id }}</strong></td>
+                <td>{{ p.viewLabel }}</td>
+                <td>
+                  <span class="badge" [style.background]="p.color" style="color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
+                    {{ p.typeLabel }}
+                  </span>
+                </td>
+                <td style="color: var(--text-muted); font-family: monospace;">{{ p.x }}%, {{ p.y }}%</td>
+                <td style="text-align: right;">
+                  <button type="button" class="btn btn-sm" (click)="removePin(idx)" style="color: #ef4444; background: transparent; border: none; cursor: pointer;">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div style="margin-top: 12px; font-size: 0.85rem; color: #60a5fa; font-weight: 600;">
-        Dommages marqués : {{ pins.length }} point(s) d'impact.
-      </div>
     </div>
 
-    <!-- Box 2: Form & Signature -->
+    <!-- Box 2: Formulaire Réservation, Caution & Signature -->
     <div class="glass-panel" style="padding: 24px;">
-      <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-file-contract green-icon"></i> Sélection Réservation & Validation</h3>
+      <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-file-signature text-primary"></i> Validation & Signature Tactile</h3>
 
       <form (ngSubmit)="submitInspection()">
-        <div class="form-group">
-          <label class="form-label">Réservation Concernée</label>
-          <select class="form-control" [(ngModel)]="selectedReservationId" name="selectedReservationId">
-            <option *ngFor="let r of reservations" [value]="r.id">{{ r.reservationNumber }} | {{ r.vehicleName || 'Véhicule' }} - {{ r.clientName || 'Client' }}</option>
-            <option *ngIf="reservations.length === 0" [value]="1">RES-2026-001 | Dacia Logan - Youssef Benani</option>
+        
+        <!-- Sélection Réservation -->
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">Réservation Concernée</label>
+          <select class="form-control" [(ngModel)]="selectedReservationId" name="selectedReservationId" style="width: 100%; padding: 10px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff;">
+            <option *ngFor="let r of reservations" [value]="r.id">
+              {{ r.reservationNumber }} | {{ r.vehicleName || 'Véhicule' }} ({{ r.clientName || 'Client' }})
+            </option>
+            <option *ngIf="reservations.length === 0" [value]="1">RES-82483 | KIA Niro - Bninly SA</option>
           </select>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <!-- Kilométrage & Carburant -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
           <div class="form-group">
-            <label class="form-label">Kilométrage Départ (KM)</label>
-            <input type="number" class="form-control" [(ngModel)]="mileage" name="mileage">
+            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">Kilométrage Départ (KM)</label>
+            <input type="number" class="form-control" [(ngModel)]="mileage" name="mileage" style="width: 100%; padding: 10px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff;">
           </div>
           <div class="form-group">
-            <label class="form-label">Niveau Carburant</label>
-            <select class="form-control" [(ngModel)]="fuelLevel" name="fuelLevel">
+            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">Niveau Carburant</label>
+            <select class="form-control" [(ngModel)]="fuelLevel" name="fuelLevel" style="width: 100%; padding: 10px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff;">
               <option value="PLEIN">100% (Plein)</option>
               <option value="3/4">75% (3/4)</option>
               <option value="1/2">50% (1/2)</option>
@@ -60,12 +371,62 @@
           </div>
         </div>
 
-        <div style="margin-top: 24px;">
-          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">
+        <!-- Caution & Dépôt de garantie -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">Montant Caution (MAD / €)</label>
+            <input type="number" class="form-control" [(ngModel)]="cautionAmount" name="cautionAmount" style="width: 100%; padding: 10px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff;">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">Type de Caution</label>
+            <select class="form-control" [(ngModel)]="cautionType" name="cautionType" style="width: 100%; padding: 10px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff;">
+              <option value="PRE_AUTORISATION_TPE">Pré-autorisation TPE</option>
+              <option value="EMPREINTE_CB">Empreinte CB</option>
+              <option value="ESPECES">Espèces (Dépôt physique)</option>
+              <option value="CHEQUE">Chèque de Caution</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Zone de Signature Tactile -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">
+              <i class="fa-solid fa-pen-nib text-primary"></i> Signature Client (Écran tactile / Souris)
+            </label>
+            <button type="button" class="btn btn-sm" (click)="clearSignature()" style="background: none; border: none; color: #f87171; font-size: 0.75rem; cursor: pointer;">
+              <i class="fa-solid fa-eraser"></i> Effacer
+            </button>
+          </div>
+
+          <div class="signature-box">
+            <canvas #sigCanvas 
+                    width="420" 
+                    height="120" 
+                    class="signature-canvas"
+                    (mousedown)="startDrawing($event)"
+                    (mousemove)="draw($event)"
+                    (mouseup)="stopDrawing()"
+                    (mouseleave)="stopDrawing()"
+                    (touchstart)="startDrawing($event)"
+                    (touchmove)="draw($event)"
+                    (touchend)="stopDrawing()"></canvas>
+            <div *ngIf="!hasSignature" class="signature-hint">
+              Signez ici avec votre doigt ou la souris...
+            </div>
+          </div>
+        </div>
+
+        <!-- Bouton Submit -->
+        <div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px 16px; font-weight: 700; font-size: 0.95rem; border-radius: 10px; background: #3b82f6; color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
             <i class="fa-solid fa-check-double"></i> Valider et Générer le Contrat PDF
           </button>
         </div>
+
       </form>
     </div>
+
   </div>
 </div>
+
