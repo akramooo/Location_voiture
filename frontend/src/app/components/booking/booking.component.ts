@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 import { Vehicle, Client } from '../../models/models';
@@ -78,7 +79,8 @@ export class BookingComponent implements OnInit {
 
   constructor(
     private apiService: ApiService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -93,6 +95,13 @@ export class BookingComponent implements OnInit {
     this.loadGanttData();
     this.loadVehicles();
     this.loadClients();
+
+    // Ouvrir automatiquement le pop-up si redirigé depuis le Dashboard (?create=true)
+    this.route.queryParams.subscribe(params => {
+      if (params['create'] === 'true' || params['new'] === 'true') {
+        this.openCreateModal();
+      }
+    });
   }
 
   // ==========================================

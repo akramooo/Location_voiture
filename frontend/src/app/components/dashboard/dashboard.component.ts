@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 import { ExecutiveKpis, Vehicle, Client, VehicleExpense, RadarFine } from '../../models/models';
@@ -65,18 +66,10 @@ export class DashboardComponent implements OnInit {
     }
   ];
 
-  isModalOpen = false;
-
-  newReservation = {
-    vehicleId: 1,
-    clientId: 1,
-    startDate: '2026-08-25T09:00',
-    endDate: '2026-08-28T18:00'
-  };
-
   constructor(
     private apiService: ApiService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -134,35 +127,7 @@ export class DashboardComponent implements OnInit {
     return this.fines.reduce((sum, f) => sum + f.fineAmount, 0);
   }
 
-  openModal(): void {
-    this.isModalOpen = true;
-  }
-
-  closeModal(): void {
-    this.isModalOpen = false;
-  }
-
-  submitReservation(): void {
-    const payload = {
-      vehicleId: this.newReservation.vehicleId,
-      clientId: this.newReservation.clientId,
-      startDate: this.newReservation.startDate + ':00',
-      endDate: this.newReservation.endDate + ':00',
-      pickupLocation: 'Agence Casablanca',
-      returnLocation: 'Agence Casablanca'
-    };
-
-    this.apiService.post('/reservations', payload).subscribe({
-      next: () => {
-        this.closeModal();
-        this.toastService.success('Réservation créée avec succès en base de données !', 'Réservation Créée');
-        this.loadKpis();
-        this.loadVehicles();
-      },
-      error: () => {
-        this.closeModal();
-        this.toastService.success('Réservation créée avec succès !', 'Réservation Créée');
-      }
-    });
+  openReservationModal(): void {
+    this.router.navigate(['/booking'], { queryParams: { create: 'true' } });
   }
 }
