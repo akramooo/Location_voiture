@@ -1,4 +1,4 @@
-﻿import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
@@ -9,8 +9,7 @@ import { Vehicle, Client } from '../../../models/models';
   selector: 'app-reservation-modal',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './reservation-modal.component.html',
-  styleUrls: []
+  templateUrl: './reservation-modal.component.html'
 })
 export class ReservationModalComponent implements OnInit, OnChanges {
   @Input() isOpen = false;
