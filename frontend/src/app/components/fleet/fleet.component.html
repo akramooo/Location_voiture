@@ -72,8 +72,17 @@
               </div>
             </td>
           </tr>
-          <tr *ngIf="vehicles.length === 0">
-            <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">Aucun véhicule dans le parc.</td>
+          <tr *ngIf="isLoading">
+            <td colspan="7" style="text-align: center; padding: 32px; color: #94a3b8;">
+              <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5rem; color: #60a5fa; margin-bottom: 8px; display: block;"></i>
+              Chargement des véhicules...
+            </td>
+          </tr>
+          <tr *ngIf="!isLoading && vehicles.length === 0">
+            <td colspan="7" style="text-align: center; padding: 32px; color: #94a3b8;">
+              <i class="fa-solid fa-car-slash" style="font-size: 1.8rem; color: #64748b; margin-bottom: 8px; display: block;"></i>
+              Aucun véhicule dans votre parc. Cliquez sur "Ajouter un Nouveau Véhicule".
+            </td>
           </tr>
         </tbody>
       </table>

@@ -13,57 +13,8 @@ import { Vehicle } from '../../models/models';
   styleUrls: ['./fleet.component.css']
 })
 export class FleetComponent implements OnInit {
-  vehicles: Vehicle[] = [
-    {
-      id: 1,
-      brand: 'Dacia',
-      model: 'Logan',
-      year: 2024,
-      registrationNumber: '12345-A-6',
-      registrationType: 'W_GARAGE',
-      fuelType: 'DIESEL',
-      gearbox: 'MANUELLE',
-      dailyRate: 280,
-      currentMileage: 45000,
-      status: 'DISPONIBLE'
-    },
-    {
-      id: 2,
-      brand: 'Renault',
-      model: 'Clio 5',
-      year: 2024,
-      registrationNumber: '67890-B-1',
-      fuelType: 'ESSENCE',
-      gearbox: 'AUTOMATIQUE',
-      dailyRate: 350,
-      currentMileage: 18500,
-      status: 'LOUE'
-    },
-    {
-      id: 3,
-      brand: 'Hyundai',
-      model: 'Tucson',
-      year: 2025,
-      registrationNumber: '11223-D-7',
-      fuelType: 'HYBRIDE',
-      gearbox: 'AUTOMATIQUE',
-      dailyRate: 650,
-      currentMileage: 12000,
-      status: 'RESERVE'
-    },
-    {
-      id: 4,
-      brand: 'Volkswagen',
-      model: 'Golf 8',
-      year: 2024,
-      registrationNumber: '44556-H-8',
-      fuelType: 'DIESEL',
-      gearbox: 'AUTOMATIQUE',
-      dailyRate: 500,
-      currentMileage: 28900,
-      status: 'EN_MAINTENANCE'
-    }
-  ];
+  vehicles: Vehicle[] = [];
+  isLoading = true;
 
   isModalOpen = false;
 
@@ -97,11 +48,17 @@ export class FleetComponent implements OnInit {
   }
 
   loadVehicles(): void {
+    this.isLoading = true;
     this.apiService.get<Vehicle[]>('/vehicles').subscribe({
       next: (data) => {
-        if (data && data.length > 0) this.vehicles = data;
+        this.vehicles = data || [];
+        this.isLoading = false;
       },
-      error: (err) => console.error('Erreur Véhicules:', err)
+      error: (err) => {
+        console.error('Erreur Véhicules:', err);
+        this.vehicles = [];
+        this.isLoading = false;
+      }
     });
   }
 
