@@ -252,6 +252,43 @@
           </div>
         </div>
 
+        <!-- Contrat Signé & Upload Section -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #f1f5f9; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-file-signature" style="color: #60a5fa;"></i> Contrat de Location Signé
+            </div>
+            
+            <!-- Print Contract Button -->
+            <button class="btn btn-secondary btn-xs" (click)="openPrintContractModal(selectedReservation)" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4);">
+              <i class="fa-solid fa-print"></i> Imprimer Contrat A4 / PDF
+            </button>
+          </div>
+
+          <!-- If Uploaded -->
+          <div *ngIf="uploadedContracts[selectedReservation.id]" style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 8px; padding: 8px 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-file-circle-check" style="color: #34d399; font-size: 1.2rem;"></i>
+              <div>
+                <div style="font-size: 0.82rem; font-weight: 700; color: #34d399;">✅ Contrat Signé & Archivé</div>
+                <div style="font-size: 0.72rem; color: #94a3b8;">{{ uploadedContracts[selectedReservation.id].fileName }} • {{ uploadedContracts[selectedReservation.id].uploadDate }}</div>
+              </div>
+            </div>
+            <a [href]="uploadedContracts[selectedReservation.id].fileUrl" target="_blank" class="btn btn-secondary btn-xs" style="color: #34d399;">
+              <i class="fa-solid fa-eye"></i> Voir
+            </a>
+          </div>
+
+          <!-- If Not Uploaded yet -->
+          <div *ngIf="!uploadedContracts[selectedReservation.id]" style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+            <div style="font-size: 0.75rem; color: #94a3b8;">Aucun scan ou photo de contrat signé rattaché.</div>
+            <label class="btn btn-primary-soft btn-xs" style="cursor: pointer; margin: 0;">
+              <i class="fa-solid fa-arrow-up-from-bracket"></i> Uploader Contrat Signé
+              <input type="file" accept="application/pdf,image/*" (change)="onContractFileSelected($event, selectedReservation)" style="display: none;">
+            </label>
+          </div>
+        </div>
+
         <!-- Actions -->
         <div style="font-size: 0.78rem; color: #94a3b8; font-weight: 700; margin-bottom: 8px;">ACTIONS SUR LE CONTRAT :</div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -269,6 +306,132 @@
 
       <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; margin-top: 16px;">
         <button type="button" class="btn btn-secondary" (click)="closeDetailModal()">Fermer</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 3: MODÈLE OFFICIEL CONTRAT DE LOCATION IMPRIMABLE (FORMAT A4)       -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop print-modal-backdrop" [class.active]="isPrintContractModalOpen" *ngIf="selectedReservation">
+    <div class="modal-dialog print-contract-dialog">
+      
+      <!-- Top Action Bar (Hidden during window.print) -->
+      <div class="print-actions-bar no-print">
+        <div>
+          <h3 style="margin: 0; font-size: 1.1rem; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-print" style="color: #60a5fa;"></i> Aperçu Impression : Contrat N° {{ selectedReservation.reservationNumber }}
+          </h3>
+          <span style="font-size: 0.78rem; color: #94a3b8;">Format A4 standard conforme réglementation location automobile Maroc.</span>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" (click)="closePrintContractModal()">Fermer</button>
+          <button class="btn btn-primary" (click)="printContractDocument()">
+            <i class="fa-solid fa-print"></i> Lancer l'Impression / Exporter PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable A4 Paper Sheet -->
+      <div class="a4-contract-sheet" id="printable-contract">
+        
+        <!-- Header Agence -->
+        <div class="contract-header">
+          <div class="agency-brand-block">
+            <h1 class="agency-title">{{ agencyProfile.name }}</h1>
+            <div class="agency-sub">LOCATION DE VOITURES DE TOURISME & UTILITAIRES</div>
+            <div class="agency-legal-info">
+              Tél: {{ agencyProfile.phone }} • Ville: {{ agencyProfile.city }}<br>
+              ICE: {{ agencyProfile.ice }} • RC: {{ agencyProfile.rc }} • IF: 40802345 • Patente: {{ agencyProfile.patente }}
+            </div>
+          </div>
+          <div class="contract-badge-block">
+            <div class="doc-badge">CONTRAT DE LOCATION</div>
+            <div class="contract-num">N° {{ selectedReservation.reservationNumber }}</div>
+            <div class="contract-date">Date : {{ selectedReservation.startDate | date:'dd/MM/yyyy' }}</div>
+          </div>
+        </div>
+
+        <div class="contract-divider"></div>
+
+        <!-- 2 Columns: Client & Véhicule -->
+        <div class="contract-grid-2">
+          <!-- Col 1: Locataire -->
+          <div class="contract-box">
+            <div class="box-header"><i class="fa-solid fa-user"></i> 1. LE LOCATAIRE / CONDUCTEUR</div>
+            <div class="box-content">
+              <div class="row-line"><b>Nom & Prénom :</b> {{ selectedReservation.clientName }}</div>
+              <div class="row-line"><b>CIN / Passeport :</b> {{ selectedReservation.clientCin || 'JT66055' }}</div>
+              <div class="row-line"><b>Téléphone :</b> {{ selectedReservation.clientPhone || '+212 6 00 00 00 00' }}</div>
+              <div class="row-line"><b>N° Permis de Conduire :</b> Permis Marocain B</div>
+              <div class="row-line"><b>Nationalité :</b> Marocaine</div>
+            </div>
+          </div>
+
+          <!-- Col 2: Véhicule -->
+          <div class="contract-box">
+            <div class="box-header"><i class="fa-solid fa-car"></i> 2. LE VÉHICULE LOUÉ</div>
+            <div class="box-content">
+              <div class="row-line"><b>Véhicule :</b> {{ selectedReservation.vehicleTitle }}</div>
+              <div class="row-line"><b>Immatriculation :</b> <span class="badge-immat">{{ selectedReservation.vehicleTitle?.split('(')[1]?.replace(')', '') || 'AB-123-CD' }}</span></div>
+              <div class="row-line"><b>Carburant :</b> DIESEL / ESSENCE</div>
+              <div class="row-line"><b>Kilométrage Départ :</b> 15,000 KM</div>
+              <div class="row-line"><b>Niveau Carburant :</b> Plein / Plein</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Période & Lieux -->
+        <div class="contract-box" style="margin-top: 10px;">
+          <div class="box-header"><i class="fa-solid fa-clock"></i> 3. DURÉE DE LOCATION & LIEUX</div>
+          <div class="box-content" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            <div class="row-line"><b>Date Départ :</b> {{ selectedReservation.startDate | date:'dd/MM/yyyy HH:mm' }}</div>
+            <div class="row-line"><b>Date Retour Prévue :</b> {{ selectedReservation.endDate | date:'dd/MM/yyyy HH:mm' }}</div>
+            <div class="row-line"><b>Durée Totale :</b> {{ selectedReservation.totalDays || 3 }} Jour(s)</div>
+            <div class="row-line"><b>Lieu de Livraison :</b> {{ selectedReservation.pickupLocation || 'Agence' }}</div>
+            <div class="row-line"><b>Lieu de Restitution :</b> {{ selectedReservation.returnLocation || 'Agence' }}</div>
+            <div class="row-line"><b>Prolongation :</b> Accord préalable requis 24h avant</div>
+          </div>
+        </div>
+
+        <!-- Section 4: Facturation & Caution -->
+        <div class="contract-box" style="margin-top: 10px;">
+          <div class="box-header"><i class="fa-solid fa-receipt"></i> 4. TARIFICATION, REGLEMENT & DÉPÔT DE GARANTIE</div>
+          <div class="box-content" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px;">
+            <div class="row-line"><b>Tarif / Jour :</b> {{ selectedReservation.dailyRate || 450 }} MAD</div>
+            <div class="row-line"><b>Montant Total TTC :</b> <span style="font-weight: 800; font-size: 1.05rem;">{{ selectedReservation.totalAmount }} MAD</span></div>
+            <div class="row-line"><b>Acompte / Versé :</b> {{ selectedReservation.paidAmount || 0 }} MAD</div>
+            <div class="row-line"><b>Caution (Empreinte CB) :</b> {{ selectedReservation.depositAmount || 5000 }} MAD</div>
+          </div>
+        </div>
+
+        <!-- Section 5: Conditions Générales Extrait -->
+        <div class="contract-clauses" style="margin-top: 10px; font-size: 0.68rem; color: #475569; line-height: 1.35; border: 1px solid #cbd5e1; padding: 8px; border-radius: 6px;">
+          <b>CONDITIONS GÉNÉRALES & CLAUSES CONTRACTUELLES :</b><br>
+          1. Le locataire déclare avoir pris connaissance de l'état du véhicule et s'engage à le restituer dans le même état de propreté et avec le même niveau de carburant.<br>
+          2. Il est strictement interdit de sous-louer le véhicule ou de le confier à un conducteur non mentionné sur le présent contrat.<br>
+          3. En cas d'accident ou de dommage, un constat amiable doit être impérativement dressé et remis à l'agence sous 24h. Les franchises d'assurance restent à la charge du locataire en cas de torts partagés ou exclusifs.<br>
+          4. Les infractions au code de la route (radars, stationnement) commises durant la période sont sous l'entière responsabilité pécuniaire et pénale du locataire.
+        </div>
+
+        <!-- Section 6: Double Signatures & Cachets -->
+        <div class="contract-signatures-grid" style="margin-top: 14px;">
+          <div class="sig-box">
+            <div class="sig-title">POUR L'AGENCE (Cachet & Signature)</div>
+            <div class="sig-content">
+              <div class="sig-agency-stamp">LU ET VALIDÉ PAR L'AGENCE</div>
+            </div>
+          </div>
+
+          <div class="sig-box">
+            <div class="sig-title">LE LOCATAIRE (Mention "Lu et approuvé" + Signature)</div>
+            <div class="sig-content">
+              <div class="sig-guide-text">Fait à {{ agencyProfile.city }}, le {{ selectedReservation.startDate | date:'dd/MM/yyyy' }}</div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div>

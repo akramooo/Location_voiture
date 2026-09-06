@@ -41,7 +41,20 @@ export class BookingComponent implements OnInit {
   // Modals
   isModalOpen = false;
   isDetailModalOpen = false;
+  isPrintContractModalOpen = false;
   selectedReservation: any = null;
+
+  // Signed Contract Upload Storage
+  uploadedContracts: { [key: number]: { fileName: string; uploadDate: string; fileUrl?: string } } = {};
+  agencyProfile = {
+    name: 'RentFlow Auto Location',
+    city: 'Casablanca',
+    phone: '+212 6 12 34 56 78',
+    ice: '80234567800012',
+    rc: 'RCS Casa B 802 345',
+    patente: '7711A',
+    tva: '20%'
+  };
 
   // Form State
   newReservation = {
@@ -314,6 +327,44 @@ export class BookingComponent implements OnInit {
     this.selectedReservation = null;
   }
 
+  openPrintContractModal(item: any): void {
+    this.selectedReservation = item;
+    // Load agency profile from local storage if available
+    try {
+      const stored = localStorage.getItem('user_profile');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.tenantName) this.agencyProfile.name = parsed.tenantName;
+      }
+    } catch {}
+    this.isPrintContractModalOpen = true;
+  }
+
+  closePrintContractModal(): void {
+    this.isPrintContractModalOpen = false;
+  }
+
+  printContractDocument(): void {
+    window.print();
+  }
+
+  onContractFileSelected(event: any, item: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const now = new Date();
+    const pad = (n: number) => n < 10 ? '0' + n : '' + n;
+    const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} à ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    this.uploadedContracts[item.id] = {
+      fileName: file.name,
+      uploadDate: dateStr,
+      fileUrl: URL.createObjectURL(file)
+    };
+
+    this.toastService.success(`Contrat signé "${file.name}" archivé avec succès !`, 'Document Enregistré');
+  }
+
   sendWhatsApp(item: any): void {
     if (!item.clientPhone) {
       this.toastService.error('Numéro de téléphone introuvable pour ce client', 'WhatsApp');
@@ -323,7 +374,7 @@ export class BookingComponent implements OnInit {
     const phoneWithPrefix = cleanPhone.startsWith('0') ? '212' + cleanPhone.substring(1) : cleanPhone;
 
     const message = encodeURIComponent(
-      `Bonjour ${item.clientName},\n\nNous vous confirmons votre réservation N° *${item.reservationNumber}* chez *RentFlow* pour le véhicule *${item.vehicleTitle}*.\n\n📅 *Période :* du ${item.startDate?.substring(0,10)} au ${item.endDate?.substring(0,10)}\n💰 *Montant Total :* ${item.totalAmount} MAD\n\nMerci de votre confiance et bonne route ! 🚗`
+      `Bonjour ${item.clientName},\n\nNous vous confirmons votre réservation N° *${item.reservationNumber}* chez *${this.agencyProfile.name}* pour le véhicule *${item.vehicleTitle}*.\n\n📅 *Période :* du ${item.startDate?.substring(0,10)} au ${item.endDate?.substring(0,10)}\n💰 *Montant Total :* ${item.totalAmount} MAD\n\nMerci de votre confiance et bonne route ! 🚗`
     );
 
     window.open(`https://wa.me/${phoneWithPrefix}?text=${message}`, '_blank');
