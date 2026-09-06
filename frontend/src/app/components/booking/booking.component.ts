@@ -74,7 +74,6 @@ export class BookingComponent implements OnInit {
     this.viewStartDate = start;
 
     this.generateTimeline();
-    this.initDefaultDates();
     this.loadGanttData();
     this.loadVehicles();
     this.loadClients();
@@ -167,10 +166,6 @@ export class BookingComponent implements OnInit {
     this.apiService.get<Vehicle[]>('/vehicles').subscribe({
       next: (data) => {
         this.vehicles = data || [];
-        if (this.vehicles.length > 0 && !this.newReservation.vehicleId) {
-          this.newReservation.vehicleId = this.vehicles[0].id!;
-          this.onVehicleSelectChange();
-        }
       },
       error: (err) => console.error('Erreur Véhicules:', err)
     });
@@ -181,9 +176,6 @@ export class BookingComponent implements OnInit {
       next: (data) => {
         // Exclure automatiquement tous les clients blacklistés du sélecteur de réservation
         this.clients = (data || []).filter(c => !c.blacklisted);
-        if (this.clients.length > 0 && !this.newReservation.clientId) {
-          this.newReservation.clientId = this.clients[0].id!;
-        }
       },
       error: (err) => console.error('Erreur Clients:', err)
     });
