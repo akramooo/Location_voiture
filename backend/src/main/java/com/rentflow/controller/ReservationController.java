@@ -33,10 +33,14 @@ public class ReservationController {
         try {
             ReservationDto saved = reservationService.createReservation(payload);
             return ResponseEntity.ok(saved);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | NoSuchElementException e) {
             Map<String, String> error = new HashMap<>();
-            error.put("message", e.getMessage());
+            error.put("message", e.getMessage() != null ? e.getMessage() : "Véhicule ou Client introuvable pour cette agence.");
             return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Erreur lors de la création : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(error);
         }
     }
 

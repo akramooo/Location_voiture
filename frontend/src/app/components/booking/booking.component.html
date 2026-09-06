@@ -51,18 +51,24 @@
       <form (ngSubmit)="submitReservation()">
         <div class="form-group">
           <label class="form-label">Sélectionner un Véhicule</label>
-          <select class="form-control" [(ngModel)]="newReservation.vehicleId" name="vehicleId">
-            <option *ngFor="let v of vehicles" [value]="v.id">{{ v.brand }} {{ v.model }} ({{ v.registrationNumber }}) - {{ v.dailyRate }} MAD/j</option>
-            <option *ngIf="vehicles.length === 0" [value]="1">Peugeot 208 (AB-123-CD) - 450 MAD/j</option>
+          <select class="form-control" [(ngModel)]="newReservation.vehicleId" name="vehicleId" required>
+            <option [ngValue]="null" disabled selected>-- Choisir un véhicule du parc --</option>
+            <option *ngFor="let v of vehicles" [ngValue]="v.id">{{ v.brand }} {{ v.model }} ({{ v.registrationNumber }}) - {{ v.dailyRate }} MAD/j</option>
           </select>
+          <small *ngIf="vehicles.length === 0" style="color: #f87171; font-size: 0.78rem; margin-top: 4px; display: block;">
+            ⚠️ Aucun véhicule enregistré. Veuillez d'abord ajouter un véhicule dans le menu "Parc & Véhicules".
+          </small>
         </div>
 
         <div class="form-group">
           <label class="form-label">Sélectionner un Client</label>
-          <select class="form-control" [(ngModel)]="newReservation.clientId" name="clientId">
-            <option *ngFor="let c of clients" [value]="c.id">{{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }} ({{ c.cinPassport || c.iceNumber }})</option>
-            <option *ngIf="clients.length === 0" [value]="1">Guillaume Moreau (123456789)</option>
+          <select class="form-control" [(ngModel)]="newReservation.clientId" name="clientId" required>
+            <option [ngValue]="null" disabled selected>-- Choisir un client CRM --</option>
+            <option *ngFor="let c of clients" [ngValue]="c.id">{{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }} ({{ c.cinPassport || c.iceNumber }})</option>
           </select>
+          <small *ngIf="clients.length === 0" style="color: #f87171; font-size: 0.78rem; margin-top: 4px; display: block;">
+            ⚠️ Aucun client enregistré. Veuillez d'abord ajouter un client dans le menu "CRM & Anti-Fraude".
+          </small>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
