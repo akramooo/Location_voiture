@@ -190,7 +190,8 @@ export class BookingComponent implements OnInit {
   loadClients(): void {
     this.apiService.get<Client[]>('/clients').subscribe({
       next: (data) => {
-        this.clients = data || [];
+        // Exclure automatiquement tous les clients blacklistés du sélecteur de réservation
+        this.clients = (data || []).filter(c => !c.blacklisted);
         if (this.clients.length > 0 && !this.newReservation.clientId) {
           this.newReservation.clientId = this.clients[0].id!;
         }

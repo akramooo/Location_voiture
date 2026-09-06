@@ -85,6 +85,10 @@ public class ReservationServiceImpl implements ReservationService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId).orElseThrow();
         Client client = clientRepository.findById(clientId).orElseThrow();
 
+        if (client.isBlacklisted()) {
+            throw new IllegalArgumentException("Impossible de créer une réservation : Ce client est inscrit sur liste noire (Blacklisté).");
+        }
+
         LocalDateTime startDate = LocalDateTime.parse(payload.get("startDate").toString());
         LocalDateTime endDate = LocalDateTime.parse(payload.get("endDate").toString());
 
