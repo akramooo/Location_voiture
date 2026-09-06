@@ -53,28 +53,10 @@ export class LoginComponent {
           this.router.navigate(['/dashboard']);
         }
       },
-      error: () => {
+      error: (err) => {
         this.isLoading = false;
-        // Fallback local si backend en cours de redémarrage
-        const isSuper = this.username.toLowerCase().includes('super');
-        const role = isSuper ? 'SUPER_ADMIN' : 'ADMIN_AGENCE';
-        const fullName = isSuper ? 'Super Admin (Master HQ )' : 'Jean-Marc Dupont (Gérant)';
-        const tenantName = isSuper ? 'RentFlow  Master SaaS' : 'Paris Étoile Car Prestige';
-
-        localStorage.setItem('jwt_token', 'demo_jwt_token_123');
-        localStorage.setItem('user_profile', JSON.stringify({
-          fullName,
-          role,
-          tenantName
-        }));
-
-        if (isSuper) {
-          this.toastService.success('Connexion Super Admin établie (Master SaaS)', 'Espace Super Admin');
-          this.router.navigate(['/super-admin']);
-        } else {
-          this.toastService.success('Connexion réussie ! (Mode Agence)', 'Session Ouverte');
-          this.router.navigate(['/dashboard']);
-        }
+        const errMsg = err?.error?.message || 'Identifiant ou mot de passe incorrect (ou serveur indisponible)';
+        this.toastService.error(errMsg, 'Échec de connexion');
       }
     });
   }

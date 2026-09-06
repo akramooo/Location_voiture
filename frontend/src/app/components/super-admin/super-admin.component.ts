@@ -452,16 +452,9 @@ export class SuperAdminComponent implements OnInit {
           this.router.navigate(['/dashboard']);
         }
       },
-      error: () => {
-        localStorage.setItem('user_profile', JSON.stringify({
-          fullName: tenant.adminFullName || `Gérant ${tenant.name}`,
-          role: 'ADMIN_AGENCE',
-          tenantName: tenant.name,
-          isImpersonated: true,
-          superAdminSession: true
-        }));
-        this.toastService.success(`Connexion établie en tant que gérant de ${tenant.name}`, 'Impersonation Active');
-        this.router.navigate(['/dashboard']);
+      error: (err) => {
+        const msg = err?.error?.message || `Impossible d'accéder à l'agence ${tenant.name} : aucun compte gérant valide`;
+        this.toastService.error(msg, 'Erreur d\'accès');
       }
     });
   }

@@ -17,7 +17,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Initialiser uniquement le compte Super Admin pour la gestion de la plateforme
+        // Initialiser uniquement le compte Super Admin pour l'administration de la plateforme
         if (userRepository.findByUsername("superadmin").isEmpty()) {
             User superAdmin = User.builder()
                     .username("superadmin")
