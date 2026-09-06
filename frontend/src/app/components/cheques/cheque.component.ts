@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
-import { Cheque } from '../../models/models';
+import { Cheque, Reservation } from '../../models/models';
 
 @Component({
   selector: 'app-cheque',
@@ -13,52 +13,23 @@ import { Cheque } from '../../models/models';
   styleUrls: ['./cheque.component.css']
 })
 export class ChequeComponent implements OnInit {
-  cheques: Cheque[] = [
-    {
-      id: 1,
-      chequeNumber: 'CH-889901',
-      bankName: 'BNP Paribas',
-      issuerName: 'Guillaume Moreau',
-      amount: 1500,
-      dueDate: '2026-08-30',
-      chequeType: 'CAUTION',
-      status: 'EN_CAISSE',
-      notes: 'Chèque de caution réservation RES-2026-001'
-    },
-    {
-      id: 2,
-      chequeNumber: 'CH-443312',
-      bankName: 'Société Générale',
-      issuerName: 'Hexagone Transport SAS',
-      amount: 3200,
-      dueDate: '2026-09-15',
-      chequeType: 'PAIEMENT',
-      status: 'DEPOSE_BANQUE',
-      notes: 'Règlement facture loc mensuelle Peugeot 3008'
-    },
-    {
-      id: 3,
-      chequeNumber: 'CH-112299',
-      bankName: 'Crédit Agricole',
-      issuerName: 'Antoine Delmas',
-      amount: 1200,
-      dueDate: '2026-08-20',
-      chequeType: 'CAUTION',
-      status: 'IMPAYE_REJET',
-      notes: 'Chèque sans provision - Client Signalé'
-    }
-  ];
+  cheques: Cheque[] = [];
+  reservations: Reservation[] = [];
+  isLoading = false;
 
   isModalOpen = false;
+  selectedReservationId: number | null = null;
 
   newCheque: Cheque = {
     chequeNumber: '',
     bankName: 'BNP Paribas',
     issuerName: '',
     amount: 1500,
-    dueDate: '2026-09-01',
+    dueDate: new Date().toISOString().substring(0, 10),
     chequeType: 'CAUTION',
     status: 'EN_CAISSE',
+    reservationId: null,
+    reservationNumber: '',
     notes: ''
   };
 
@@ -71,7 +42,13 @@ export class ChequeComponent implements OnInit {
     'Caisse d\'Épargne',
     'CIC',
     'Crédit Mutuel',
-    'La Banque Postale'
+    'La Banque Postale',
+    'Attijariwafa Bank',
+    'Banque Populaire (Maroc)',
+    'BMCE Bank of Africa',
+    'CIH Bank',
+    'Crédit du Maroc',
+    'Société Générale Maroc'
   ];
 
   constructor(
@@ -81,23 +58,91 @@ export class ChequeComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCheques();
+    this.loadReservations();
   }
 
   loadCheques(): void {
+    this.isLoading = true;
     this.apiService.get<Cheque[]>('/billing/cheques').subscribe({
       next: (data) => {
-        if (data && data.length > 0) this.cheques = data;
+        this.cheques = data || [];
+        this.isLoading = false;
       },
-      error: () => {}
+      error: () => {
+        this.cheques = [];
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadReservations(): void {
+    this.apiService.get<Reservation[]>('/reservations').subscribe({
+      next: (data) => {
+        this.reservations = data || [];
+      },
+      error: () => {
+        this.reservations = [];
+      }
     });
   }
 
   openModal(): void {
+    this.selectedReservationId = null;
+    this.newCheque = {
+      chequeNumber: '',
+      bankName: 'BNP Paribas',
+      issuerName: '',
+      amount: 1500,
+      dueDate: new Date().toISOString().substring(0, 10),
+      chequeType: 'CAUTION',
+      status: 'EN_CAISSE',
+      reservationId: null,
+      reservationNumber: '',
+      notes: ''
+    };
     this.isModalOpen = true;
   }
 
   closeModal(): void {
     this.isModalOpen = false;
+  }
+
+  onReservationChange(): void {
+    if (this.selectedReservationId) {
+      const selected = this.reservations.find(r => r.id === Number(this.selectedReservationId));
+      if (selected) {
+        this.newCheque.reservationId = selected.id || null;
+        this.newCheque.reservationNumber = selected.reservationNumber || '';
+        
+        // Auto-remplir l'émetteur avec le nom du client de la réservation
+        if (selected.clientName) {
+          this.newCheque.issuerName = selected.clientName;
+        }
+
+        // Auto-remplir le montant selon le type de chèque
+        if (this.newCheque.chequeType === 'CAUTION') {
+          this.newCheque.amount = selected.depositAmount || 1500;
+        } else {
+          this.newCheque.amount = selected.totalAmount || selected.paidAmount || 1500;
+        }
+      }
+    } else {
+      this.newCheque.reservationId = null;
+      this.newCheque.reservationNumber = '';
+    }
+  }
+
+  onChequeTypeChange(): void {
+    if (this.selectedReservationId) {
+      const selected = this.reservations.find(r => r.id === Number(this.selectedReservationId));
+      if (selected) {
+        if (this.newCheque.chequeType === 'CAUTION') {
+          this.newCheque.amount = selected.depositAmount || 1500;
+        } else {
+          this.newCheque.amount = selected.totalAmount || selected.paidAmount || 1500;
+        }
+      }
+    }
   }
 
   updateStatus(cheque: Cheque, newStatus: any): void {

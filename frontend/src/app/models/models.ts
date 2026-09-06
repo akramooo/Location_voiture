@@ -152,6 +152,8 @@ export interface Cheque {
   dueDate: string;
   chequeType: 'CAUTION' | 'PAIEMENT';
   status: 'EN_CAISSE' | 'DEPOSE_BANQUE' | 'ENCAISSE' | 'RESTITUE' | 'IMPAYE_REJET';
+  reservationId?: number | null;
+  reservationNumber?: string;
   notes?: string;
 }
 
