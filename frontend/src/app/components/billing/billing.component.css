@@ -1,3 +1,22 @@
 .billing-component {
   animation: fadeIn 0.4s ease-out;
 }
+
+.custom-table th {
+  padding: 12px 14px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.custom-table td {
+  padding: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.custom-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}

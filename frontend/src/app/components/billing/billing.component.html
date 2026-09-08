@@ -1,23 +1,162 @@
 <div class="billing-component fade-in">
-  <div class="billing-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <div class="billing-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
     <div>
       <h1 class="page-title">Facturation & Caisse Journalière</h1>
-      <p class="page-subtitle">Conformité  (SIRET, TVA 20%, Mention Légales) et clôture de shift agent.</p>
+      <p class="page-subtitle">Gestion conforme de la facturation (TVA 20%, ICE), journal des encaissements et clôtures de shifts agents.</p>
     </div>
-    <button class="btn btn-primary" (click)="openModal()">
-      <i class="fa-solid fa-cash-register"></i> Clôture de Caisse
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-cash-register"></i> Clôture de Caisse
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Summary Banner -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="glass-panel" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 46px; height: 46px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #34d399;">
+        <i class="fa-solid fa-money-bill-wave"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Total Espèces Shifts</div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: #34d399; margin-top: 2px;">{{ totalCashCollected | number:'1.2-2' }} MAD</div>
+      </div>
+    </div>
+
+    <div class="glass-panel" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 46px; height: 46px; border-radius: 12px; background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #60a5fa;">
+        <i class="fa-solid fa-credit-card"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Total TPE / Carte</div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: #60a5fa; margin-top: 2px;">{{ totalTpeCollected | number:'1.2-2' }} MAD</div>
+      </div>
+    </div>
+
+    <div class="glass-panel" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 46px; height: 46px; border-radius: 12px; background: rgba(168, 85, 247, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #c084fc;">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Total Facturé TTC</div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: #c084fc; margin-top: 2px;">{{ totalInvoicedTtc | number:'1.2-2' }} MAD</div>
+      </div>
+    </div>
+
+    <div class="glass-panel" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
+      <div [style.background]="latestShiftDifference === 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'"
+           [style.color]="latestShiftDifference === 0 ? '#34d399' : '#f87171'"
+           style="width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+        <i class="fa-solid fa-scale-balanced"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Dernier Écart Caisse</div>
+        <div [style.color]="latestShiftDifference === 0 ? '#34d399' : '#f87171'" style="font-size: 1.3rem; font-weight: 800; margin-top: 2px;">
+          {{ latestShiftDifference >= 0 ? '+' : '' }}{{ latestShiftDifference | number:'1.2-2' }} MAD
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div style="display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 12px;">
+    <button class="btn" [ngClass]="activeTab === 'cash-shifts' ? 'btn-primary' : 'btn-secondary'" (click)="activeTab = 'cash-shifts'">
+      <i class="fa-solid fa-cash-register"></i> Journal des Clôtures de Caisse (Shifts)
+      <span class="badge" style="background: rgba(255,255,255,0.2); margin-left: 6px;">{{ cashShifts.length }}</span>
+    </button>
+    <button class="btn" [ngClass]="activeTab === 'invoices' ? 'btn-primary' : 'btn-secondary'" (click)="activeTab = 'invoices'">
+      <i class="fa-solid fa-file-invoice"></i> Factures Émises Conformes (TVA 20%)
+      <span class="badge" style="background: rgba(255,255,255,0.2); margin-left: 6px;">{{ invoices.length }}</span>
     </button>
   </div>
 
-  <div class="glass-panel main-billing-panel" style="padding: 24px;">
-    <h3 class="panel-title" style="margin-bottom: 16px;"><i class="fa-solid fa-file-invoice blue-icon"></i> Factures Émises Conformes</h3>
+  <!-- TAB 1: JOURNAL DES SHIFTS DE CAISSE -->
+  <div *ngIf="activeTab === 'cash-shifts'" class="glass-panel main-billing-panel fade-in" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 class="panel-title"><i class="fa-solid fa-receipt green-icon"></i> Historique des Shifts & Clôtures de Caisse</h3>
+      <button class="btn btn-secondary btn-sm" (click)="loadCashShifts()"><i class="fa-solid fa-rotate"></i> Actualiser</button>
+    </div>
+
+    <div class="custom-table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Réf Shift</th>
+            <th>Date & Heure</th>
+            <th>Agent</th>
+            <th>Fond Initial</th>
+            <th>Espèces Reçues</th>
+            <th>TPE / Carte</th>
+            <th>Attendu</th>
+            <th>Réel en Main</th>
+            <th>Écart Caisse</th>
+            <th>Statut</th>
+            <th>Observations</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let shift of cashShifts">
+            <td><span style="font-weight: 800; color: #60a5fa;">#SHIFT-{{ shift.id }}</span></td>
+            <td>
+              <div style="font-weight: 600;">{{ (shift.shiftEnd || shift.shiftStart) | date:'dd/MM/yyyy' }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">{{ (shift.shiftEnd || shift.shiftStart) | date:'HH:mm' }}</div>
+            </td>
+            <td>
+              <span style="font-size: 0.85rem; font-weight: 600; color: #cbd5e1;">{{ shift.agentName || 'Gérant' }}</span>
+            </td>
+            <td>{{ shift.startingCash | number:'1.2-2' }} MAD</td>
+            <td style="font-weight: 700; color: #34d399;">{{ shift.totalCashReceived | number:'1.2-2' }} MAD</td>
+            <td style="font-weight: 700; color: #60a5fa;">{{ shift.totalTpeReceived | number:'1.2-2' }} MAD</td>
+            <td>{{ shift.expectedCashInHand | number:'1.2-2' }} MAD</td>
+            <td style="font-weight: 800;">{{ shift.actualCashInHand | number:'1.2-2' }} MAD</td>
+            <td>
+              <span class="badge" 
+                    [style.background]="(shift.cashDifference || 0) === 0 ? 'rgba(16, 185, 129, 0.15)' : ((shift.cashDifference || 0) < 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)')"
+                    [style.color]="(shift.cashDifference || 0) === 0 ? '#34d399' : ((shift.cashDifference || 0) < 0 ? '#f87171' : '#60a5fa')">
+                {{ (shift.cashDifference || 0) >= 0 ? '+' : '' }}{{ (shift.cashDifference || 0) | number:'1.2-2' }} MAD
+              </span>
+            </td>
+            <td>
+              <span class="badge badge-DISPONIBLE">{{ shift.status || 'CLOTURE' }}</span>
+            </td>
+            <td>
+              <span style="font-size: 0.8rem; color: var(--text-muted);" [title]="shift.notes || ''">
+                {{ (shift.notes && shift.notes.length > 25) ? (shift.notes.substring(0, 25) + '...') : (shift.notes || 'Conforme') }}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" (click)="printTicketZ(shift)">
+                <i class="fa-solid fa-receipt"></i> Ticket Z
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="cashShifts.length === 0">
+            <td colspan="12" style="text-align:center; padding: 36px; color: var(--text-muted);">
+              <i class="fa-solid fa-cash-register" style="font-size: 2.5rem; color: #64748b; margin-bottom: 12px; display: block;"></i>
+              <div style="font-size: 1rem; font-weight: 600; color: #cbd5e1;">Aucune clôture de caisse enregistrée.</div>
+              <div style="font-size: 0.85rem; margin-top: 4px; margin-bottom: 16px;">Effectuez la clôture de fin de shift agent pour alimenter le journal.</div>
+              <button class="btn btn-primary btn-sm" (click)="openModal()"><i class="fa-solid fa-plus"></i> Effectuer une Clôture de Caisse</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: FACTURES ÉMISES -->
+  <div *ngIf="activeTab === 'invoices'" class="glass-panel main-billing-panel fade-in" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 class="panel-title"><i class="fa-solid fa-file-invoice blue-icon"></i> Factures Émises Conformes (DGI / ICE)</h3>
+      <button class="btn btn-secondary btn-sm" (click)="loadInvoices()"><i class="fa-solid fa-rotate"></i> Actualiser</button>
+    </div>
 
     <div class="custom-table-container">
       <table class="custom-table">
         <thead>
           <tr>
             <th>N° Facture</th>
-            <th>Client / SIRET</th>
+            <th>Client / ICE</th>
             <th>Total HT</th>
             <th>TVA (20%)</th>
             <th>Total TTC</th>
@@ -29,8 +168,8 @@
           <tr *ngFor="let inv of invoices">
             <td><span style="font-weight: 700; color: #60a5fa;">{{ inv.invoiceNumber }}</span></td>
             <td>
-              <div>{{ inv.clientName || 'Client Standard' }}</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">SIRET Client: {{ inv.iceClient || 'N/A' }}</div>
+              <div style="font-weight: 600;">{{ inv.clientName || 'Client Standard' }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">ICE: {{ inv.iceClient || 'N/A' }}</div>
             </td>
             <td>{{ inv.totalHT | number:'1.2-2' }} MAD</td>
             <td>{{ inv.totalTVA | number:'1.2-2' }} MAD</td>
@@ -43,7 +182,11 @@
             </td>
           </tr>
           <tr *ngIf="invoices.length === 0">
-            <td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">Aucune facture émise pour le moment.</td>
+            <td colspan="7" style="text-align:center; padding: 36px; color: var(--text-muted);">
+              <i class="fa-solid fa-file-invoice" style="font-size: 2.5rem; color: #64748b; margin-bottom: 12px; display: block;"></i>
+              <div>Aucune facture émise pour le moment.</div>
+              <div style="font-size: 0.85rem; margin-top: 4px;">Les factures sont générées automatiquement lors de la validation des réservations.</div>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -52,7 +195,7 @@
 
   <!-- Angular Cash Register Modal Dialog -->
   <div class="modal-backdrop" [class.active]="isModalOpen">
-    <div class="modal-dialog glass-panel">
+    <div class="modal-dialog glass-panel" style="max-width: 600px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-cash-register green-icon"></i> Clôture de Caisse Journalière</h2>
         <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
@@ -62,33 +205,63 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
             <label class="form-label">Fond de Caisse Initial (MAD)</label>
-            <input type="number" class="form-control" [(ngModel)]="cashRegister.startingCash" name="startingCash" required>
+            <input type="number" step="0.01" class="form-control" [(ngModel)]="cashRegister.startingCash" name="startingCash" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Espèces Réellement en Caisse (MAD)</label>
-            <input type="number" class="form-control" [(ngModel)]="cashRegister.actualCashInHand" name="actualCashInHand" required>
+            <label class="form-label">Total Encaissé Espèces (MAD)</label>
+            <input type="number" step="0.01" class="form-control" [(ngModel)]="cashRegister.totalCashReceived" name="totalCashReceived" required>
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
-            <label class="form-label">Total Encaissé Espèces (MAD)</label>
-            <input type="number" class="form-control" [(ngModel)]="cashRegister.totalCashReceived" name="totalCashReceived" required>
+            <label class="form-label">Total Encaissé TPE / Carte (MAD)</label>
+            <input type="number" step="0.01" class="form-control" [(ngModel)]="cashRegister.totalTpeReceived" name="totalTpeReceived" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Total Encaissé TPE / Carte (MAD)</label>
-            <input type="number" class="form-control" [(ngModel)]="cashRegister.totalTpeReceived" name="totalTpeReceived" required>
+            <label class="form-label">Total Chèques / Virements (MAD)</label>
+            <input type="number" step="0.01" class="form-control" [(ngModel)]="cashRegister.totalTransferReceived" name="totalTransferReceived">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 8px;">
+          <label class="form-label" style="font-weight: 700; color: #60a5fa;">Espèces Réellement Comptées en Caisse (MAD)</label>
+          <input type="number" step="0.01" class="form-control" [(ngModel)]="cashRegister.actualCashInHand" name="actualCashInHand" required style="font-size: 1.15rem; font-weight: 800; border-color: rgba(59, 130, 246, 0.5);">
+        </div>
+
+        <!-- Live Calculation Box -->
+        <div style="margin: 16px 0; padding: 14px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+            <span style="color: var(--text-muted);">Espèces Attendues Théoriques :</span>
+            <span style="font-weight: 700; color: white;">{{ expectedCashInHand | number:'1.2-2' }} MAD</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+            <span style="color: var(--text-muted);">Espèces Réelles Déclarées :</span>
+            <span style="font-weight: 700; color: #60a5fa;">{{ (cashRegister.actualCashInHand || 0) | number:'1.2-2' }} MAD</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 800; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 8px;">
+            <span>Écart de Caisse :</span>
+            <span [style.color]="cashDifference === 0 ? '#34d399' : (cashDifference < 0 ? '#f87171' : '#60a5fa')">
+              {{ cashDifference >= 0 ? '+' : '' }}{{ cashDifference | number:'1.2-2' }} MAD
+              <small *ngIf="cashDifference === 0" style="font-size: 0.75rem; color: #34d399;">(Conforme)</small>
+              <small *ngIf="cashDifference < 0" style="font-size: 0.75rem; color: #f87171;">(Déficit)</small>
+              <small *ngIf="cashDifference > 0" style="font-size: 0.75rem; color: #60a5fa;">(Excédent)</small>
+            </span>
           </div>
         </div>
 
         <div class="form-group">
           <label class="form-label">Observations / Notes de Shift</label>
-          <input type="text" class="form-control" [(ngModel)]="cashRegister.notes" name="notes">
+          <input type="text" class="form-control" [(ngModel)]="cashRegister.notes" name="notes" placeholder="Ex: Clôture conforme / Justification de l'écart">
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
-          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-lock"></i> Valider & Clôturer la Caisse</button>
+          <button type="button" class="btn btn-secondary" [disabled]="isSubmitting" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            <i *ngIf="isSubmitting" class="fa-solid fa-spinner fa-spin"></i>
+            <i *ngIf="!isSubmitting" class="fa-solid fa-lock"></i>
+            {{ isSubmitting ? 'Enregistrement...' : 'Valider & Clôturer la Caisse' }}
+          </button>
         </div>
       </form>
     </div>

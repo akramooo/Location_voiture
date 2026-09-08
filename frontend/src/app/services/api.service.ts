@@ -38,4 +38,21 @@ export class ApiService {
   delete<T>(endpoint: string): Observable<T> {
     return this.http.delete<T>(`${this.baseUrl}${endpoint}`, { headers: this.getHeaders() });
   }
+
+  uploadFile(file: File, folder: string = 'general'): Observable<{ url: string; objectName: string; fileName: string; size: number; contentType: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+
+    const token = localStorage.getItem('jwt_token') || 'demo';
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.post<{ url: string; objectName: string; fileName: string; size: number; contentType: string }>(
+      `${this.baseUrl}/files/upload`,
+      formData,
+      { headers }
+    );
+  }
 }

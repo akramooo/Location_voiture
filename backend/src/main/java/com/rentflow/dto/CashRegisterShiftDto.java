@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class CashRegisterShiftDto {
     private Long id;
     private Long tenantId;
+    private String agentName;
     private LocalDateTime shiftStart;
     private LocalDateTime shiftEnd;
     private Double startingCash;

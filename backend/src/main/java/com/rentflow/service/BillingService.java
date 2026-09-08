@@ -11,6 +11,7 @@ public interface BillingService {
     List<InvoiceDto> getInvoices();
     InvoiceDto generateInvoice(Map<String, Object> payload);
     CashRegisterShiftDto closeShiftCashRegister(Map<String, Object> payload);
+    List<CashRegisterShiftDto> getCashRegisterShifts();
     List<RadarFineDto> getRadarFines();
     RadarFineDto reallocateFine(Long id, Map<String, Object> payload);
 }

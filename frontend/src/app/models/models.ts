@@ -108,12 +108,18 @@ export interface Invoice {
 
 export interface CashRegisterShift {
   id?: number;
+  agentName?: string;
+  shiftStart?: string;
+  shiftEnd?: string;
   startingCash: number;
   totalCashReceived: number;
   totalTpeReceived: number;
   totalCheckReceived?: number;
   totalTransferReceived?: number;
+  expectedCashInHand?: number;
   actualCashInHand: number;
+  cashDifference?: number;
+  status?: string;
   notes?: string;
 }
 

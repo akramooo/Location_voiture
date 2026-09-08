@@ -38,6 +38,7 @@ public class BillingServiceImpl implements BillingService {
     private final ReservationRepository reservationRepository;
     private final ClientRepository clientRepository;
     private final TenantRepository tenantRepository;
+    private final UserRepository userRepository;
     private final InvoiceMapper invoiceMapper;
     private final CashRegisterShiftMapper cashRegisterShiftMapper;
     private final RadarFineMapper radarFineMapper;
@@ -76,20 +77,68 @@ public class BillingServiceImpl implements BillingService {
         Long tenantId = TenantContext.getCurrentTenant();
         Tenant tenant = tenantRepository.findById(tenantId).orElseThrow();
 
-        Double startingCash = Double.parseDouble(payload.getOrDefault("startingCash", "1000.0").toString());
-        Double actualCashInHand = Double.parseDouble(payload.getOrDefault("actualCashInHand", "2500.0").toString());
-        Double totalCashReceived = Double.parseDouble(payload.getOrDefault("totalCashReceived", "1500.0").toString());
-        Double totalTpeReceived = Double.parseDouble(payload.getOrDefault("totalTpeReceived", "3200.0").toString());
-        Double totalCheckReceived = Double.parseDouble(payload.getOrDefault("totalCheckReceived", "0.0").toString());
-        Double totalTransferReceived = Double.parseDouble(payload.getOrDefault("totalTransferReceived", "0.0").toString());
+        User agent = null;
+        try {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getName() != null && !auth.getName().equals("anonymousUser")) {
+                agent = userRepository.findByUsername(auth.getName()).orElse(null);
+            }
+        } catch (Exception ignored) {}
+
+        if (agent == null) {
+            agent = userRepository.findByTenantId(tenantId).stream().findFirst().orElse(null);
+        }
+
+        Double startingCash = parseDoubleSafe(payload.get("startingCash"), 0.0);
+        Double actualCashInHand = parseDoubleSafe(payload.get("actualCashInHand"), 0.0);
+        Double totalCashReceived = parseDoubleSafe(payload.get("totalCashReceived"), 0.0);
+        Double totalTpeReceived = parseDoubleSafe(payload.get("totalTpeReceived"), 0.0);
+        Double totalCheckReceived = parseDoubleSafe(payload.get("totalCheckReceived"), 0.0);
+        Double totalTransferReceived = parseDoubleSafe(payload.get("totalTransferReceived"), 0.0);
 
         double expectedCashInHand = startingCash + totalCashReceived;
         double cashDiff = actualCashInHand - expectedCashInHand;
 
-        CashRegisterShift shift = CashRegisterShift.builder().tenant(tenant).shiftStart(LocalDateTime.now().minusHours(8)).shiftEnd(LocalDateTime.now()).startingCash(startingCash).totalCashReceived(totalCashReceived).totalTpeReceived(totalTpeReceived).totalCheckReceived(totalCheckReceived).totalTransferReceived(totalTransferReceived).expectedCashInHand(expectedCashInHand).actualCashInHand(actualCashInHand).cashDifference(cashDiff).status("CLOTURE").notes(payload.getOrDefault("notes", "Clôture de fin de shift agent").toString()).build();
+        CashRegisterShift shift = CashRegisterShift.builder()
+                .tenant(tenant)
+                .agent(agent)
+                .shiftStart(LocalDateTime.now().minusHours(8))
+                .shiftEnd(LocalDateTime.now())
+                .startingCash(startingCash)
+                .totalCashReceived(totalCashReceived)
+                .totalTpeReceived(totalTpeReceived)
+                .totalCheckReceived(totalCheckReceived)
+                .totalTransferReceived(totalTransferReceived)
+                .expectedCashInHand(expectedCashInHand)
+                .actualCashInHand(actualCashInHand)
+                .cashDifference(cashDiff)
+                .status("CLOTURE")
+                .notes(payload.getOrDefault("notes", "Clôture de shift conforme").toString())
+                .build();
 
         CashRegisterShift saved = cashRegisterShiftRepository.save(shift);
         return cashRegisterShiftMapper.toDto(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CashRegisterShiftDto> getCashRegisterShifts() {
+        Long tenantId = TenantContext.getCurrentTenant();
+        List<CashRegisterShift> list = cashRegisterShiftRepository.findByTenantId(tenantId);
+        list.sort((a, b) -> {
+            if (a.getShiftEnd() == null || b.getShiftEnd() == null) return 0;
+            return b.getShiftEnd().compareTo(a.getShiftEnd());
+        });
+        return cashRegisterShiftMapper.toDtoList(list);
+    }
+
+    private Double parseDoubleSafe(Object val, Double defaultVal) {
+        if (val == null) return defaultVal;
+        try {
+            return Double.parseDouble(val.toString());
+        } catch (Exception e) {
+            return defaultVal;
+        }
     }
 
     @Override

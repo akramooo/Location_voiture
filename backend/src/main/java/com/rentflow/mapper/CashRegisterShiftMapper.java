@@ -12,6 +12,7 @@ import java.util.List;
 public interface CashRegisterShiftMapper {
 
     @Mapping(target = "tenantId", source = "tenant.id")
+    @Mapping(target = "agentName", source = "agent.fullName")
     CashRegisterShiftDto toDto(CashRegisterShift shift);
 
     @Mapping(target = "tenant", ignore = true)

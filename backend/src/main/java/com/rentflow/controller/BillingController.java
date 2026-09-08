@@ -36,6 +36,11 @@ public class BillingController {
         return ResponseEntity.ok(saved);
     }
 
+    @GetMapping("/cash-register/shifts")
+    public ResponseEntity<List<CashRegisterShiftDto>> getCashRegisterShifts() {
+        return ResponseEntity.ok(billingService.getCashRegisterShifts());
+    }
+
     @GetMapping("/radar-fines")
     public ResponseEntity<List<RadarFineDto>> getRadarFines() {
         return ResponseEntity.ok(billingService.getRadarFines());

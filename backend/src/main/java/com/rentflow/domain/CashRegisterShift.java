@@ -22,7 +22,7 @@ public class CashRegisterShift {
     private Tenant tenant;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private User agent;
 
     private LocalDateTime shiftStart;
