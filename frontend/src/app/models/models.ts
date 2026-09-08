@@ -182,10 +182,17 @@ export interface OcrScanResult {
   cinPassport?: string;
   firstName?: string;
   lastName?: string;
+  birthDate?: string;
   driverLicenseNumber?: string;
   expiryDate?: string;
   nationality?: string;
+  address?: string;
+  licensePlate?: string;
+  vinNumber?: string;
+  brandModel?: string;
   rawConfidence: number;
+  rawText?: string;
+  extractedLines?: string[];
 }
 
 /* Super Admin Platform Models */

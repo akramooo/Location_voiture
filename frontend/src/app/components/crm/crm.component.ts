@@ -56,6 +56,22 @@ export class CrmComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadClients();
     this.setupDynamicCinCheck();
+    this.checkOcrPrefill();
+  }
+
+  private checkOcrPrefill(): void {
+    const state = history.state;
+    if (state && state.fromOcr && state.clientData) {
+      this.openModal();
+      this.newClient = {
+        ...this.newClient,
+        ...state.clientData
+      };
+      if (this.newClient.cinPassport) {
+        this.onCinInput();
+      }
+      this.toastService.info('Formulaire pré-rempli à partir du scan optique OCR.', 'Scan OCR Détecté');
+    }
   }
 
   ngOnDestroy(): void {
