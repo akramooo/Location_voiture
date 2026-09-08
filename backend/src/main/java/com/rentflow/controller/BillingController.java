@@ -41,6 +41,28 @@ public class BillingController {
         return ResponseEntity.ok(billingService.getCashRegisterShifts());
     }
 
+    @GetMapping("/cheques")
+    public ResponseEntity<List<com.rentflow.dto.ChequeDto>> getCheques() {
+        return ResponseEntity.ok(billingService.getCheques());
+    }
+
+    @PostMapping("/cheques")
+    public ResponseEntity<com.rentflow.dto.ChequeDto> createCheque(@RequestBody com.rentflow.dto.ChequeDto dto) {
+        return ResponseEntity.ok(billingService.createCheque(dto));
+    }
+
+    @PatchMapping("/cheques/{id}/status")
+    public ResponseEntity<com.rentflow.dto.ChequeDto> updateChequeStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        String status = payload.getOrDefault("status", "EN_CAISSE");
+        return ResponseEntity.ok(billingService.updateChequeStatus(id, status));
+    }
+
+    @DeleteMapping("/cheques/{id}")
+    public ResponseEntity<Void> deleteCheque(@PathVariable Long id) {
+        billingService.deleteCheque(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/radar-fines")
     public ResponseEntity<List<RadarFineDto>> getRadarFines() {
         return ResponseEntity.ok(billingService.getRadarFines());

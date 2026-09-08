@@ -12,6 +12,10 @@ public interface BillingService {
     InvoiceDto generateInvoice(Map<String, Object> payload);
     CashRegisterShiftDto closeShiftCashRegister(Map<String, Object> payload);
     List<CashRegisterShiftDto> getCashRegisterShifts();
+    List<com.rentflow.dto.ChequeDto> getCheques();
+    com.rentflow.dto.ChequeDto createCheque(com.rentflow.dto.ChequeDto dto);
+    com.rentflow.dto.ChequeDto updateChequeStatus(Long id, String status);
+    void deleteCheque(Long id);
     List<RadarFineDto> getRadarFines();
     RadarFineDto reallocateFine(Long id, Map<String, Object> payload);
 }

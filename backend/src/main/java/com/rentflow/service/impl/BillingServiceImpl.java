@@ -41,8 +41,10 @@ public class BillingServiceImpl implements BillingService {
     private final ClientRepository clientRepository;
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
+    private final com.rentflow.repository.ChequeRepository chequeRepository;
     private final InvoiceMapper invoiceMapper;
     private final CashRegisterShiftMapper cashRegisterShiftMapper;
+    private final com.rentflow.mapper.ChequeMapper chequeMapper;
     private final RadarFineMapper radarFineMapper;
 
     @Override
@@ -140,6 +142,72 @@ public class BillingServiceImpl implements BillingService {
             return Double.parseDouble(val.toString());
         } catch (Exception e) {
             return defaultVal;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.rentflow.dto.ChequeDto> getCheques() {
+        Long tenantId = TenantContext.getCurrentTenant();
+        List<com.rentflow.domain.Cheque> list = chequeRepository.findByTenantId(tenantId);
+        list.sort((a, b) -> {
+            if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
+            return b.getCreatedAt().compareTo(a.getCreatedAt());
+        });
+        return chequeMapper.toDtoList(list);
+    }
+
+    @Override
+    public com.rentflow.dto.ChequeDto createCheque(com.rentflow.dto.ChequeDto dto) {
+        Long tenantId = TenantContext.getCurrentTenant();
+        Tenant tenant = tenantRepository.findById(tenantId).orElseThrow();
+
+        Reservation reservation = null;
+        if (dto.getReservationId() != null) {
+            reservation = reservationRepository.findById(dto.getReservationId()).orElse(null);
+        }
+
+        com.rentflow.domain.Cheque cheque = com.rentflow.domain.Cheque.builder()
+                .tenant(tenant)
+                .reservation(reservation)
+                .chequeNumber(dto.getChequeNumber() != null ? dto.getChequeNumber().trim() : "CH-" + System.currentTimeMillis() % 1000000)
+                .bankName(dto.getBankName() != null ? dto.getBankName().trim() : "Attijariwafa Bank")
+                .issuerName(dto.getIssuerName() != null ? dto.getIssuerName().trim() : "Client")
+                .amount(dto.getAmount() != null ? dto.getAmount() : 1500.0)
+                .dueDate(dto.getDueDate() != null ? dto.getDueDate() : java.time.LocalDate.now())
+                .chequeType(dto.getChequeType() != null ? dto.getChequeType() : "CAUTION")
+                .status(dto.getStatus() != null ? dto.getStatus() : "EN_CAISSE")
+                .reservationNumber(dto.getReservationNumber())
+                .chequeScanUrl(dto.getChequeScanUrl())
+                .notes(dto.getNotes())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        com.rentflow.domain.Cheque saved = chequeRepository.save(cheque);
+        return chequeMapper.toDto(saved);
+    }
+
+    @Override
+    public com.rentflow.dto.ChequeDto updateChequeStatus(Long id, String status) {
+        Long tenantId = TenantContext.getCurrentTenant();
+        com.rentflow.domain.Cheque cheque = chequeRepository.findById(id).orElseThrow();
+
+        if (!cheque.getTenant().getId().equals(tenantId)) {
+            throw new NoSuchElementException("Chèque non trouvé pour ce tenant");
+        }
+
+        cheque.setStatus(status);
+        com.rentflow.domain.Cheque saved = chequeRepository.save(cheque);
+        return chequeMapper.toDto(saved);
+    }
+
+    @Override
+    public void deleteCheque(Long id) {
+        Long tenantId = TenantContext.getCurrentTenant();
+        com.rentflow.domain.Cheque cheque = chequeRepository.findById(id).orElseThrow();
+
+        if (cheque.getTenant().getId().equals(tenantId)) {
+            chequeRepository.delete(cheque);
         }
     }
 

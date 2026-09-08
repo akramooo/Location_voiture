@@ -123,6 +123,23 @@ export interface CashRegisterShift {
   notes?: string;
 }
 
+export interface Cheque {
+  id?: number;
+  tenantId?: number;
+  chequeNumber: string;
+  bankName: string;
+  issuerName: string;
+  amount: number;
+  dueDate: string;
+  chequeType: 'CAUTION' | 'PAIEMENT';
+  status: 'EN_CAISSE' | 'DEPOSE_BANQUE' | 'ENCAISSE' | 'RESTITUE' | 'IMPAYE_REJET';
+  reservationId?: number | null;
+  reservationNumber?: string;
+  chequeScanUrl?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
 export interface RadarFine {
   id?: number;
   ticketNumber: string;

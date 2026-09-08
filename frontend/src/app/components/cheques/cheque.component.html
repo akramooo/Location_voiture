@@ -1,89 +1,210 @@
 <div class="cheque-component fade-in">
-  <div class="cheque-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <div class="cheque-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
     <div>
-      <h1 class="page-title">Gestion des Chèques & Cautions (RentFlow )</h1>
-      <p class="page-subtitle">Suivi du portefeuille de chèques en caisse, dépôts bancaires et alertes d'échéances.</p>
+      <h1 class="page-title">Gestion des Chèques & Cautions (RentFlow)</h1>
+      <p class="page-subtitle">Suivi du portefeuille de chèques en caisse, bordereaux de remise bancaire, archivage MinIO par location et alertes d'échéances.</p>
     </div>
     <button class="btn btn-primary" (click)="openModal()">
       <i class="fa-solid fa-money-check-dollar"></i> Enregistrer un Chèque
     </button>
   </div>
 
-  <!-- Summary KPI Card -->
-  <div class="glass-panel" style="padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-    <div style="display: flex; align-items: center; gap: 16px;">
-      <div style="width: 46px; height: 46px; background: rgba(59, 130, 246, 0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #60a5fa; font-size: 1.4rem;">
+  <!-- Summary KPI Cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <!-- KPI 1: En Caisse -->
+    <div class="glass-panel" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 46px; height: 46px; background: rgba(59, 130, 246, 0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #60a5fa; font-size: 1.3rem;">
         <i class="fa-solid fa-vault"></i>
       </div>
       <div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Encours Chèques en Caisse</div>
-        <div style="font-size: 1.6rem; font-weight: 800; color: white;">{{ getTotalEnCaisse() | number:'1.2-2' }} MAD</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Chèques en Caisse</div>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #60a5fa; margin-top: 2px;">{{ totalEnCaisse | number:'1.2-2' }} MAD</div>
       </div>
     </div>
-    <div style="font-size: 0.85rem; color: #34d399; font-weight: 600;">
-      <i class="fa-solid fa-shield-check"></i> Traçabilité & Numérotation Sécurisée
+
+    <!-- KPI 2: Déposés Banque -->
+    <div class="glass-panel" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 46px; height: 46px; background: rgba(168, 85, 247, 0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #c084fc; font-size: 1.3rem;">
+        <i class="fa-solid fa-building-columns"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Déposés en Banque</div>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #c084fc; margin-top: 2px;">{{ totalDeposeBanque | number:'1.2-2' }} MAD</div>
+      </div>
+    </div>
+
+    <!-- KPI 3: Encaissés -->
+    <div class="glass-panel" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 46px; height: 46px; background: rgba(160, 235, 129, 0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #34d399; font-size: 1.3rem;">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Total Encaissés</div>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #34d399; margin-top: 2px;">{{ totalEncaisse | number:'1.2-2' }} MAD</div>
+      </div>
+    </div>
+
+    <!-- KPI 4: Impayés / Rejets -->
+    <div class="glass-panel" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
+      <div [style.background]="totalImpayes === 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'"
+           [style.color]="totalImpayes === 0 ? '#34d399' : '#f87171'"
+           style="width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Rejets / Impayés</div>
+        <div [style.color]="totalImpayes === 0 ? '#34d399' : '#f87171'" style="font-size: 1.35rem; font-weight: 800; margin-top: 2px;">
+          {{ totalImpayes | number:'1.2-2' }} MAD
+        </div>
+      </div>
     </div>
   </div>
 
+  <!-- Filter Navigation Bar & Search -->
+  <div class="glass-panel" style="padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <!-- Status Tabs -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="btn btn-sm" [ngClass]="activeFilter === 'ALL' ? 'btn-primary' : 'btn-secondary'" (click)="activeFilter = 'ALL'">
+        Tous <span class="badge" style="background: rgba(255,255,255,0.2); margin-left: 4px;">{{ cheques.length }}</span>
+      </button>
+      <button class="btn btn-sm" [ngClass]="activeFilter === 'EN_CAISSE' ? 'btn-primary' : 'btn-secondary'" (click)="activeFilter = 'EN_CAISSE'">
+        En Caisse <span class="badge" style="background: rgba(255,255,255,0.2); margin-left: 4px;">{{ countByStatus('EN_CAISSE') }}</span>
+      </button>
+      <button class="btn btn-sm" [ngClass]="activeFilter === 'DEPOSE_BANQUE' ? 'btn-primary' : 'btn-secondary'" (click)="activeFilter = 'DEPOSE_BANQUE'">
+        Déposés <span class="badge" style="background: rgba(255,255,255,0.2); margin-left: 4px;">{{ countByStatus('DEPOSE_BANQUE') }}</span>
+      </button>
+      <button class="btn btn-sm" [ngClass]="activeFilter === 'ENCAISSE' ? 'btn-primary' : 'btn-secondary'" (click)="activeFilter = 'ENCAISSE'">
+        Encaissés <span class="badge" style="background: rgba(255,255,255,0.2); margin-left: 4px;">{{ countByStatus('ENCAISSE') }}</span>
+      </button>
+      <button class="btn btn-sm" [ngClass]="activeFilter === 'RESTITUE' ? 'btn-primary' : 'btn-secondary'" (click)="activeFilter = 'RESTITUE'">
+        Restitués <span class="badge" style="background: rgba(255,255,255,0.2); margin-left: 4px;">{{ countByStatus('RESTITUE') }}</span>
+      </button>
+      <button class="btn btn-sm" [ngClass]="activeFilter === 'IMPAYE_REJET' ? 'btn-danger' : 'btn-secondary'" (click)="activeFilter = 'IMPAYE_REJET'">
+        Rejets <span class="badge" style="background: rgba(255,255,255,0.2); margin-left: 4px;">{{ countByStatus('IMPAYE_REJET') }}</span>
+      </button>
+    </div>
+
+    <!-- Search Input -->
+    <div style="min-width: 240px; position: relative;">
+      <input type="text" class="form-control" [(ngModel)]="searchTerm" placeholder="Rechercher par N°, client, banque..." style="padding-left: 36px; font-size: 0.85rem;">
+      <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
+    </div>
+  </div>
+
+  <!-- Main Table Panel -->
   <div class="glass-panel main-table-panel" style="padding: 24px;">
     <div class="custom-table-container">
       <table class="custom-table">
         <thead>
           <tr>
-            <th>N° Chèque / Type</th>
+            <th>Scan / N° Chèque / Type</th>
             <th>Émetteur (Client)</th>
-            <th>Banque</th>
-            <th>Montant</th>
+            <th>Banque Émettrice</th>
+            <th>Montant (MAD)</th>
             <th>Échéance</th>
-            <th>Statut</th>
-            <th>Actions</th>
+            <th>Statut Portefeuille</th>
+            <th>Actions / Transitions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let c of cheques">
+          <tr *ngFor="let c of filteredCheques">
             <td>
-              <div style="font-weight: 700; color: #60a5fa;">{{ c.chequeNumber }}</div>
-              <div style="display: flex; gap: 4px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
-                <span class="badge" [class.badge-RESERVE]="c.chequeType === 'CAUTION'" [class.badge-DISPONIBLE]="c.chequeType === 'PAIEMENT'">{{ c.chequeType }}</span>
-                <span *ngIf="c.reservationNumber" class="badge" style="background: rgba(96, 165, 250, 0.15); color: #93c5fd; border: 1px solid rgba(96, 165, 250, 0.3);">
-                  <i class="fa-solid fa-file-contract"></i> {{ c.reservationNumber }}
-                </span>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <!-- Thumbnail MinIO ou Icône -->
+                <div *ngIf="c.chequeScanUrl" (click)="openScanPreview(c.chequeScanUrl)" style="cursor: pointer; position: relative;" title="Cliquer pour agrandir la photo du chèque">
+                  <img [src]="c.chequeScanUrl" style="width: 48px; height: 32px; object-fit: cover; border-radius: 6px; border: 1px solid var(--bg-card-border);" alt="Scan Chèque">
+                  <i class="fa-solid fa-magnifying-glass-plus" style="position: absolute; bottom: 2px; right: 2px; font-size: 0.65rem; background: rgba(0,0,0,0.7); color: white; padding: 2px; border-radius: 3px;"></i>
+                </div>
+                <div *ngIf="!c.chequeScanUrl" style="width: 48px; height: 32px; background: rgba(255,255,255,0.05); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.8rem;" title="Pas de photo jointe">
+                  <i class="fa-solid fa-image"></i>
+                </div>
+
+                <div>
+                  <div style="font-weight: 800; font-size: 0.95rem; color: #60a5fa; letter-spacing: 0.5px;">
+                    {{ c.chequeNumber || 'N/A' }}
+                  </div>
+                  <div style="display: flex; gap: 4px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
+                    <span class="badge" [class.badge-RESERVE]="c.chequeType === 'CAUTION'" [class.badge-DISPONIBLE]="c.chequeType === 'PAIEMENT'">
+                      {{ c.chequeType === 'CAUTION' ? '🛡️ CAUTION' : '💳 PAIEMENT' }}
+                    </span>
+                    <span *ngIf="c.reservationNumber" class="badge" style="background: rgba(96, 165, 250, 0.15); color: #93c5fd; border: 1px solid rgba(96, 165, 250, 0.3);">
+                      <i class="fa-solid fa-file-contract"></i> {{ c.reservationNumber }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </td>
             <td>
-              <div style="font-weight: 600;">{{ c.issuerName }}</div>
+              <div style="font-weight: 700; color: white;">{{ c.issuerName || 'Client Non Renseigné' }}</div>
               <div *ngIf="c.notes" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
                 <i class="fa-regular fa-comment-dots"></i> {{ c.notes }}
               </div>
             </td>
-            <td>{{ c.bankName }}</td>
-            <td style="font-weight: 800; color: #34d399;">{{ c.amount | number:'1.2-2' }} MAD</td>
             <td>
-              <div>{{ c.dueDate }}</div>
+              <span style="font-weight: 600; color: #cbd5e1;"><i class="fa-solid fa-building-columns" style="color: #64748b; margin-right: 6px;"></i>{{ c.bankName }}</span>
+            </td>
+            <td style="font-weight: 800; font-size: 1.05rem; color: #34d399;">
+              {{ c.amount | number:'1.2-2' }} MAD
             </td>
             <td>
-              <span *ngIf="c.status === 'EN_CAISSE'" class="badge badge-DISPONIBLE">EN CAISSE</span>
-              <span *ngIf="c.status === 'DEPOSE_BANQUE'" class="badge badge-LOUE">DÉPOSÉ EN BANQUE</span>
-              <span *ngIf="c.status === 'ENCAISSE'" class="badge badge-DISPONIBLE">ENCAISSÉ</span>
-              <span *ngIf="c.status === 'RESTITUE'" class="badge badge-RESERVE">RESTITUÉ</span>
-              <span *ngIf="c.status === 'IMPAYE_REJET'" class="badge badge-BLOQUE_LITIGE">IMPAYÉ / REJETÉ</span>
+              <div style="font-weight: 600;">{{ c.dueDate }}</div>
             </td>
             <td>
-              <div style="display: flex; gap: 6px;">
-                <button *ngIf="c.status === 'EN_CAISSE'" class="btn btn-secondary btn-xs" (click)="updateStatus(c, 'DEPOSE_BANQUE')">Déposer</button>
-                <button *ngIf="c.status === 'DEPOSE_BANQUE'" class="btn btn-secondary btn-xs" style="color: #34d399;" (click)="updateStatus(c, 'ENCAISSE')">Encaisser</button>
-                <button *ngIf="c.status === 'EN_CAISSE'" class="btn btn-secondary btn-xs" style="color: #c084fc;" (click)="updateStatus(c, 'RESTITUE')">Restituer</button>
-                <button *ngIf="c.status !== 'IMPAYE_REJET'" class="btn btn-danger btn-xs" (click)="updateStatus(c, 'IMPAYE_REJET')">Rejet</button>
+              <span *ngIf="c.status === 'EN_CAISSE'" class="badge" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4);">
+                <i class="fa-solid fa-vault"></i> EN CAISSE
+              </span>
+              <span *ngIf="c.status === 'DEPOSE_BANQUE'" class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4);">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> DÉPOSÉ EN BANQUE
+              </span>
+              <span *ngIf="c.status === 'ENCAISSE'" class="badge badge-DISPONIBLE">
+                <i class="fa-solid fa-circle-check"></i> ENCAISSÉ
+              </span>
+              <span *ngIf="c.status === 'RESTITUE'" class="badge" style="background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.4);">
+                <i class="fa-solid fa-arrow-rotate-left"></i> RESTITUÉ
+              </span>
+              <span *ngIf="c.status === 'IMPAYE_REJET'" class="badge badge-BLOQUE_LITIGE">
+                <i class="fa-solid fa-triangle-exclamation"></i> REJET / IMPAYÉ
+              </span>
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <!-- En Caisse -> Déposer en banque ou Restituer -->
+                <button *ngIf="c.status === 'EN_CAISSE'" class="btn btn-secondary btn-xs" (click)="updateStatus(c, 'DEPOSE_BANQUE')" title="Remettre à la banque">
+                  <i class="fa-solid fa-building-columns"></i> Déposer
+                </button>
+                <button *ngIf="c.status === 'EN_CAISSE' && c.chequeType === 'CAUTION'" class="btn btn-secondary btn-xs" style="color: #94a3b8;" (click)="updateStatus(c, 'RESTITUE')" title="Restituer la caution au client">
+                  <i class="fa-solid fa-hand-holding-dollar"></i> Restituer
+                </button>
+
+                <!-- Déposé en banque -> Encaissé ou Rejet -->
+                <button *ngIf="c.status === 'DEPOSE_BANQUE'" class="btn btn-secondary btn-xs" style="color: #34d399;" (click)="updateStatus(c, 'ENCAISSE')" title="Valider l'encaissement">
+                  <i class="fa-solid fa-circle-check"></i> Encaisser
+                </button>
+
+                <!-- Rejet si pas déjà rejeté -->
+                <button *ngIf="c.status !== 'IMPAYE_REJET' && c.status !== 'RESTITUE'" class="btn btn-danger btn-xs" (click)="updateStatus(c, 'IMPAYE_REJET')" title="Déclarer impayé / sans provision">
+                  <i class="fa-solid fa-ban"></i> Rejet
+                </button>
+
+                <!-- Supprimer -->
+                <button class="btn btn-secondary btn-xs" style="color: #ef4444; opacity: 0.8;" (click)="deleteCheque(c)" title="Supprimer définitivement">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
               </div>
             </td>
           </tr>
 
-          <!-- Empty State si aucun chèque -->
-          <tr *ngIf="cheques.length === 0">
-            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
-              <i class="fa-solid fa-folder-open" style="font-size: 2.2rem; margin-bottom: 10px; display: block; opacity: 0.35;"></i>
-              <div style="font-size: 0.95rem; font-weight: 500;">Aucun chèque enregistré dans la base de données</div>
-              <div style="font-size: 0.8rem; margin-top: 4px; opacity: 0.7;">Cliquez sur "Enregistrer un Chèque" pour en ajouter un.</div>
+          <!-- Empty State -->
+          <tr *ngIf="filteredCheques.length === 0">
+            <td colspan="7" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
+              <i class="fa-solid fa-money-check-dollar" style="font-size: 2.8rem; margin-bottom: 12px; display: block; opacity: 0.35;"></i>
+              <div style="font-size: 1.05rem; font-weight: 600; color: #cbd5e1;">Aucun chèque correspondant</div>
+              <div style="font-size: 0.85rem; margin-top: 4px; margin-bottom: 16px; opacity: 0.7;">
+                {{ searchTerm ? 'Aucun résultat trouvé pour votre recherche.' : 'Enregistrez un chèque de caution ou de paiement pour alimenter le portefeuille.' }}
+              </div>
+              <button *ngIf="!searchTerm" class="btn btn-primary btn-sm" (click)="openModal()">
+                <i class="fa-solid fa-plus"></i> Enregistrer un Chèque
+              </button>
             </td>
           </tr>
         </tbody>
@@ -91,9 +212,9 @@
     </div>
   </div>
 
-  <!-- Angular Add Cheque Modal -->
+  <!-- Angular Add Cheque Modal with MinIO Upload -->
   <div class="modal-backdrop" [class.active]="isModalOpen">
-    <div class="modal-dialog glass-panel" style="max-width: 600px;">
+    <div class="modal-dialog glass-panel" style="max-width: 620px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
         <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-money-check-dollar blue-icon"></i> Enregistrer un NOUVEAU Chèque</h2>
         <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeModal()">&times;</button>
@@ -103,8 +224,8 @@
         <!-- Sélecteur Réservation Associée -->
         <div class="form-group" style="margin-bottom: 16px;">
           <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
-            <span><i class="fa-solid fa-file-contract" style="color: #60a5fa;"></i> Réservation Associée</span>
-            <span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">(Alimente automatiquement émetteur & montant)</span>
+            <span><i class="fa-solid fa-file-contract" style="color: #60a5fa;"></i> Réservation Associée (Optionnel)</span>
+            <span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">(Crée le dossier MinIO par location)</span>
           </label>
           <select class="form-control" [(ngModel)]="selectedReservationId" (change)="onReservationChange()" name="selectedReservation">
             <option [ngValue]="null">-- Aucune réservation (Chèque libre / Autre) --</option>
@@ -112,15 +233,12 @@
               [{{ r.reservationNumber }}] {{ r.clientName }} - {{ r.vehicleName || 'Véhicule' }} (Caution: {{ r.depositAmount || 0 }} MAD)
             </option>
           </select>
-          <small *ngIf="reservations.length === 0" style="color: #94a3b8; font-size: 0.75rem; margin-top: 4px; display: block;">
-            ℹ️ Aucune réservation avec mode de paiement "Chèque" trouvée dans la base de données.
-          </small>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
-            <label class="form-label">N° du Chèque</label>
-            <input type="text" class="form-control" [(ngModel)]="newCheque.chequeNumber" name="chequeNumber" required placeholder="CH-123456">
+            <label class="form-label">N° du Chèque <span style="color:#ef4444;">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="newCheque.chequeNumber" name="chequeNumber" required placeholder="Ex: CH-987654" style="font-weight: 700; color: #60a5fa;">
           </div>
           <div class="form-group">
             <label class="form-label">Banque Émettrice</label>
@@ -132,19 +250,19 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
-            <label class="form-label">Nom de l'Émetteur</label>
-            <input type="text" class="form-control" [(ngModel)]="newCheque.issuerName" name="issuerName" required placeholder="ex: Guillaume Moreau">
+            <label class="form-label">Émetteur / Client <span style="color:#ef4444;">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="newCheque.issuerName" name="issuerName" required placeholder="Nom complet du client" style="font-weight: 700;">
           </div>
           <div class="form-group">
-            <label class="form-label">Montant (MAD)</label>
-            <input type="number" class="form-control" [(ngModel)]="newCheque.amount" name="amount" required>
+            <label class="form-label">Montant (MAD) <span style="color:#ef4444;">*</span></label>
+            <input type="number" step="0.01" class="form-control" [(ngModel)]="newCheque.amount" name="amount" required style="font-weight: 800; font-size: 1.1rem; color: #34d399;">
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
-            <label class="form-label">Date d'Échéance</label>
-            <input type="date" class="form-control" [(ngModel)]="newCheque.dueDate" name="dueDate" required>
+            <label class="form-label">Date d'Échéance / Encaissement</label>
+            <input type="date" class="form-control" [(ngModel)]="newCheque.dueDate" name="dueDate" required style="font-weight: 600;">
           </div>
           <div class="form-group">
             <label class="form-label">Type de Chèque</label>
@@ -155,17 +273,64 @@
           </div>
         </div>
 
+        <!-- Upload Photo / Scan du Chèque sur MinIO -->
+        <div class="form-group" style="margin-top: 8px;">
+          <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+            <span><i class="fa-solid fa-cloud-arrow-up" style="color: #60a5fa;"></i> Photo / Scan du Chèque (MinIO)</span>
+            <span style="font-size: 0.75rem; color: #94a3b8;">Format JPG, PNG (Max 10 Mo)</span>
+          </label>
+          
+          <input type="file" (change)="onFileSelected($event)" accept="image/*" style="display: none;" #checkFileInput>
+          
+          <div *ngIf="!previewScanUrl" (click)="checkFileInput.click()" style="border: 2px dashed rgba(59, 130, 246, 0.4); border-radius: 10px; padding: 18px; text-align: center; cursor: pointer; background: rgba(0,0,0,0.2); transition: all 0.2s ease;">
+            <i class="fa-solid fa-camera" style="font-size: 1.8rem; color: #60a5fa; margin-bottom: 6px;"></i>
+            <div style="font-weight: 600; font-size: 0.9rem; color: white;">Cliquez pour joindre la photo du chèque</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Stocké automatiquement dans le dossier MinIO de la location</div>
+          </div>
+
+          <div *ngIf="previewScanUrl" style="display: flex; align-items: center; gap: 14px; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;">
+            <img [src]="previewScanUrl" style="max-height: 70px; max-width: 120px; border-radius: 6px; object-fit: cover;" alt="Preview Chèque">
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 0.85rem; color: white;">Photo sélectionnée prête pour MinIO</div>
+              <div style="font-size: 0.75rem; color: #34d399; margin-top: 2px;"><i class="fa-solid fa-check"></i> Prêt pour l'envoi</div>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" (click)="removeSelectedFile()"><i class="fa-solid fa-trash"></i> Retirer</button>
+          </div>
+        </div>
+
         <!-- Champ Commentaire Séparé -->
-        <div class="form-group" style="margin-top: 4px;">
+        <div class="form-group" style="margin-top: 8px;">
           <label class="form-label"><i class="fa-regular fa-comment-dots"></i> Commentaire / Remarques</label>
           <input type="text" class="form-control" [(ngModel)]="newCheque.notes" name="notes" placeholder="Remarques, motif, référence particulière...">
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
-          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
-          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Enregistrer le Chèque</button>
+          <button type="button" class="btn btn-secondary" [disabled]="isSubmitting" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            <i *ngIf="isSubmitting" class="fa-solid fa-spinner fa-spin"></i>
+            <i *ngIf="!isSubmitting" class="fa-solid fa-check"></i>
+            {{ isSubmitting ? 'Envoi MinIO & Enregistrement...' : 'Enregistrer le Chèque' }}
+          </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Lightbox Modal Preview Chèque MinIO -->
+  <div class="modal-backdrop" [class.active]="!!viewScanModalUrl">
+    <div class="modal-dialog glass-panel" style="max-width: 800px; text-align: center;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.15rem;"><i class="fa-solid fa-image blue-icon"></i> Aperçu du Chèque (MinIO)</h3>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;" (click)="closeScanPreview()">&times;</button>
+      </div>
+
+      <div *ngIf="viewScanModalUrl" style="padding: 10px; background: rgba(0,0,0,0.5); border-radius: 10px;">
+        <img [src]="viewScanModalUrl" style="max-height: 500px; max-width: 100%; border-radius: 8px; object-fit: contain;" alt="Chèque Scan">
+      </div>
+
+      <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+        <button class="btn btn-secondary btn-sm" (click)="closeScanPreview()">Fermer</button>
+      </div>
     </div>
   </div>
 </div>
