@@ -33,6 +33,23 @@ public class FileStorageServiceImpl implements FileStorageService {
     @Value("${minio.bucket-name:rentflow-media}")
     private String bucketName;
 
+    private String getSanitizedEndpoint() {
+        if (endpoint == null || endpoint.isBlank()) {
+            return "http://localhost:9000";
+        }
+        String clean = endpoint.trim();
+        if (clean.startsWith("http://:")) {
+            clean = clean.replace("http://:", "http://localhost:");
+        } else if (clean.startsWith("https://:")) {
+            clean = clean.replace("https://:", "https://localhost:");
+        } else if (clean.startsWith(":")) {
+            clean = "http://localhost" + clean;
+        } else if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+            clean = "http://" + clean;
+        }
+        return clean.replaceAll("/$", "");
+    }
+
     @Override
     public Map<String, Object> uploadFile(MultipartFile file, String folder) {
         if (file.isEmpty()) {
@@ -60,7 +77,7 @@ public class FileStorageServiceImpl implements FileStorageService {
                             .build()
             );
 
-            fileUrl = String.format("%s/%s/%s", endpoint.replaceAll("/$", ""), bucketName, objectName);
+            fileUrl = String.format("%s/%s/%s", getSanitizedEndpoint(), bucketName, objectName);
             log.info(">>> Fichier stocké sur MinIO avec succès : {}", fileUrl);
 
         } catch (Exception e) {

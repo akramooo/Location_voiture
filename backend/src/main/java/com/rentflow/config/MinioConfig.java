@@ -25,11 +25,29 @@ public class MinioConfig {
     @Value("${minio.bucket-name:rentflow-media}")
     private String bucketName;
 
+    private String getSanitizedEndpoint() {
+        if (endpoint == null || endpoint.isBlank()) {
+            return "http://localhost:9000";
+        }
+        String clean = endpoint.trim();
+        if (clean.startsWith("http://:")) {
+            clean = clean.replace("http://:", "http://localhost:");
+        } else if (clean.startsWith("https://:")) {
+            clean = clean.replace("https://:", "https://localhost:");
+        } else if (clean.startsWith(":")) {
+            clean = "http://localhost" + clean;
+        } else if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+            clean = "http://" + clean;
+        }
+        return clean;
+    }
+
     @Bean
     public MinioClient minioClient() {
+        String safeEndpoint = getSanitizedEndpoint();
         try {
             MinioClient client = MinioClient.builder()
-                    .endpoint(endpoint)
+                    .endpoint(safeEndpoint)
                     .credentials(accessKey, secretKey)
                     .build();
 
@@ -68,10 +86,18 @@ public class MinioConfig {
         } catch (Exception e) {
             log.warn(">>> Attention: Impossible d'initialiser MinIO au démarrage ({}). Le mode stockage de secours sera activé.", e.getMessage());
             // Retourne un client minimaliste sans crasher l'application
-            return MinioClient.builder()
-                    .endpoint(endpoint)
-                    .credentials(accessKey, secretKey)
-                    .build();
+            try {
+                return MinioClient.builder()
+                        .endpoint(safeEndpoint)
+                        .credentials(accessKey, secretKey)
+                        .build();
+            } catch (Exception fallbackEx) {
+                log.warn(">>> Fallback MinIO client initialization failed: {}. Using localhost default.", fallbackEx.getMessage());
+                return MinioClient.builder()
+                        .endpoint("http://localhost:9000")
+                        .credentials("minioadmin", "minioadmin123")
+                        .build();
+            }
         }
     }
 }
