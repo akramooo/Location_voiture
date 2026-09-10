@@ -136,12 +136,14 @@ public class VehicleServiceImpl implements VehicleService {
             alert.put("docType", doc.getDocType());
             alert.put("expirationDate", doc.getExpirationDate());
             alert.put("daysRemaining", daysRemaining);
+            alert.put("providerName", doc.getProviderName() != null ? doc.getProviderName() : "");
             alert.put("vehicleId", doc.getVehicle().getId());
             alert.put("registrationNumber", doc.getVehicle().getRegistrationNumber());
             alert.put("vehicleName", doc.getVehicle().getBrand() + " " + doc.getVehicle().getModel());
             alerts.add(alert);
         }
 
+        alerts.sort(Comparator.comparingLong(a -> (Long) a.get("daysRemaining")));
         return alerts;
     }
 

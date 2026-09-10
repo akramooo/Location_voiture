@@ -32,6 +32,7 @@ export class DashboardComponent implements OnInit {
   clients: Client[] = [];
   expenses: VehicleExpense[] = [];
   fines: RadarFine[] = [];
+  alerts: any[] = [];
 
   isModalOpen = false;
 
@@ -44,6 +45,7 @@ export class DashboardComponent implements OnInit {
     this.loadVehicles();
     this.loadExpenses();
     this.loadFines();
+    this.loadAlerts();
   }
 
   loadKpis(): void {
@@ -78,6 +80,17 @@ export class DashboardComponent implements OnInit {
       },
       error: () => {
         this.fines = [];
+      }
+    });
+  }
+
+  loadAlerts(): void {
+    this.apiService.get<any[]>('/vehicles/alerts').subscribe({
+      next: (data) => {
+        this.alerts = data || [];
+      },
+      error: () => {
+        this.alerts = [];
       }
     });
   }
