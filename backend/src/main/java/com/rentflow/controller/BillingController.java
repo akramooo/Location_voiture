@@ -68,6 +68,34 @@ public class BillingController {
         return ResponseEntity.ok(billingService.getRadarFines());
     }
 
+    @PostMapping("/radar-fines")
+    public ResponseEntity<?> createRadarFine(@RequestBody RadarFineDto dto) {
+        try {
+            RadarFineDto saved = billingService.createRadarFine(dto);
+            return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/radar-fines/{id}")
+    public ResponseEntity<?> updateRadarFine(@PathVariable Long id, @RequestBody RadarFineDto dto) {
+        try {
+            RadarFineDto updated = billingService.updateRadarFine(id, dto);
+            return ResponseEntity.ok(updated);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/radar-fines/{id}")
+    public ResponseEntity<Void> deleteRadarFine(@PathVariable Long id) {
+        billingService.deleteRadarFine(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/radar-fines/{id}/reallocate")
     public ResponseEntity<?> reallocateFine(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
         try {

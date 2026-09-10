@@ -13,13 +13,7 @@ import com.rentflow.dto.RadarFineDto;
 import com.rentflow.mapper.CashRegisterShiftMapper;
 import com.rentflow.mapper.InvoiceMapper;
 import com.rentflow.mapper.RadarFineMapper;
-import com.rentflow.repository.InvoiceRepository;
-import com.rentflow.repository.CashRegisterShiftRepository;
-import com.rentflow.repository.RadarFineRepository;
-import com.rentflow.repository.ReservationRepository;
-import com.rentflow.repository.ClientRepository;
-import com.rentflow.repository.TenantRepository;
-import com.rentflow.repository.UserRepository;
+import com.rentflow.repository.*;
 import com.rentflow.security.TenantContext;
 import com.rentflow.service.BillingService;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +35,8 @@ public class BillingServiceImpl implements BillingService {
     private final ClientRepository clientRepository;
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
-    private final com.rentflow.repository.ChequeRepository chequeRepository;
+    private final ChequeRepository chequeRepository;
+    private final VehicleRepository vehicleRepository;
     private final InvoiceMapper invoiceMapper;
     private final CashRegisterShiftMapper cashRegisterShiftMapper;
     private final com.rentflow.mapper.ChequeMapper chequeMapper;
@@ -216,7 +211,101 @@ public class BillingServiceImpl implements BillingService {
     public List<RadarFineDto> getRadarFines() {
         Long tenantId = TenantContext.getCurrentTenant();
         List<RadarFine> list = radarFineRepository.findByTenantId(tenantId);
+        list.sort((a, b) -> {
+            if (a.getViolationDate() == null || b.getViolationDate() == null) return 0;
+            return b.getViolationDate().compareTo(a.getViolationDate());
+        });
         return radarFineMapper.toDtoList(list);
+    }
+
+    @Override
+    public RadarFineDto createRadarFine(RadarFineDto dto) {
+        Long tenantId = TenantContext.getCurrentTenant();
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new IllegalArgumentException("Tenant introuvable"));
+
+        if (dto.getVehicleId() == null) {
+            throw new IllegalArgumentException("Le véhicule est obligatoire pour déclarer une infraction");
+        }
+
+        com.rentflow.domain.Vehicle vehicle = vehicleRepository.findById(dto.getVehicleId())
+                .orElseThrow(() -> new IllegalArgumentException("Véhicule introuvable"));
+
+        Client client = null;
+        boolean isReallocated = false;
+        if (dto.getReallocatedClientId() != null) {
+            client = clientRepository.findById(dto.getReallocatedClientId()).orElse(null);
+            if (client != null) {
+                isReallocated = true;
+            }
+        }
+
+        LocalDateTime vDate = dto.getViolationDate() != null ? dto.getViolationDate() : LocalDateTime.now();
+        String ticketNum = (dto.getTicketNumber() != null && !dto.getTicketNumber().isBlank())
+                ? dto.getTicketNumber().trim()
+                : "PV-" + System.currentTimeMillis() % 1000000;
+
+        RadarFine fine = RadarFine.builder()
+                .tenant(tenant)
+                .vehicle(vehicle)
+                .reallocatedClient(client)
+                .ticketNumber(ticketNum)
+                .violationDate(vDate)
+                .violationLocation(dto.getViolationLocation() != null ? dto.getViolationLocation().trim() : "Non spécifié")
+                .fineAmount(dto.getFineAmount() != null ? dto.getFineAmount() : 300.0)
+                .reallocated(isReallocated)
+                .reallocationDate(isReallocated ? LocalDateTime.now() : null)
+                .status(dto.getStatus() != null ? dto.getStatus() : (isReallocated ? "REASSIGNE" : "RECU"))
+                .build();
+
+        RadarFine saved = radarFineRepository.save(fine);
+        return radarFineMapper.toDto(saved);
+    }
+
+    @Override
+    public RadarFineDto updateRadarFine(Long id, RadarFineDto dto) {
+        Long tenantId = TenantContext.getCurrentTenant();
+        RadarFine fine = radarFineRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Infraction non trouvée"));
+
+        if (!fine.getTenant().getId().equals(tenantId)) {
+            throw new NoSuchElementException("Infraction non trouvée pour ce tenant");
+        }
+
+        if (dto.getTicketNumber() != null) fine.setTicketNumber(dto.getTicketNumber().trim());
+        if (dto.getViolationLocation() != null) fine.setViolationLocation(dto.getViolationLocation().trim());
+        if (dto.getFineAmount() != null) fine.setFineAmount(dto.getFineAmount());
+        if (dto.getViolationDate() != null) fine.setViolationDate(dto.getViolationDate());
+        if (dto.getStatus() != null) fine.setStatus(dto.getStatus());
+
+        if (dto.getVehicleId() != null) {
+            com.rentflow.domain.Vehicle vehicle = vehicleRepository.findById(dto.getVehicleId()).orElse(null);
+            if (vehicle != null) fine.setVehicle(vehicle);
+        }
+
+        if (dto.getReallocatedClientId() != null) {
+            Client client = clientRepository.findById(dto.getReallocatedClientId()).orElse(null);
+            fine.setReallocatedClient(client);
+            fine.setReallocated(client != null);
+            if (client != null && fine.getReallocationDate() == null) {
+                fine.setReallocationDate(LocalDateTime.now());
+                fine.setStatus("REASSIGNE");
+            }
+        }
+
+        RadarFine saved = radarFineRepository.save(fine);
+        return radarFineMapper.toDto(saved);
+    }
+
+    @Override
+    public void deleteRadarFine(Long id) {
+        Long tenantId = TenantContext.getCurrentTenant();
+        RadarFine fine = radarFineRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Infraction non trouvée"));
+
+        if (fine.getTenant().getId().equals(tenantId)) {
+            radarFineRepository.delete(fine);
+        }
     }
 
     @Override

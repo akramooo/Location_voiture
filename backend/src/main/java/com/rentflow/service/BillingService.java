@@ -17,5 +17,8 @@ public interface BillingService {
     com.rentflow.dto.ChequeDto updateChequeStatus(Long id, String status);
     void deleteCheque(Long id);
     List<RadarFineDto> getRadarFines();
+    RadarFineDto createRadarFine(RadarFineDto dto);
+    RadarFineDto updateRadarFine(Long id, RadarFineDto dto);
+    void deleteRadarFine(Long id);
     RadarFineDto reallocateFine(Long id, Map<String, Object> payload);
 }

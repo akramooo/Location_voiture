@@ -142,12 +142,18 @@ export interface Cheque {
 
 export interface RadarFine {
   id?: number;
-  ticketNumber: string;
+  tenantId?: number;
+  vehicleId?: number;
   vehicleName?: string;
+  vehicleRegistration?: string;
+  reallocatedClientId?: number | null;
+  clientName?: string;
+  ticketNumber: string;
+  violationDate?: string;
   violationLocation?: string;
   fineAmount: number;
-  clientName?: string;
   reallocated: boolean;
+  reallocationDate?: string;
   status?: string;
 }
 

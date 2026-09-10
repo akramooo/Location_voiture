@@ -2,47 +2,214 @@
   <div class="radars-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
     <div>
       <h1 class="page-title">Registre des PV Radars & Infractions</h1>
-      <p class="page-subtitle">Gestion des contraventions et réassignation légale au client conducteur.</p>
+      <p class="page-subtitle">Gestion des contraventions, suivi des montants et réassignation légale au client conducteur.</p>
     </div>
     <button class="btn btn-primary" (click)="openModal()">
       <i class="fa-solid fa-plus"></i> Déclarer une Infraction
     </button>
   </div>
 
-  <div class="glass-panel main-radars-panel" style="padding: 24px;">
+  <!-- KPI Summary Cards -->
+  <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <!-- KPI 1: Total PVs -->
+    <div class="glass-panel" style="padding: 16px; border-radius: 14px; border-left: 4px solid #3b82f6;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total PV Déclarés</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; display: flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-camera"></i>
+        </div>
+      </div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #60a5fa;">{{ fines.length }} <span style="font-size: 0.8rem;">Infraction(s)</span></div>
+      <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">Toutes contraventions confondues</div>
+    </div>
+
+    <!-- KPI 2: Total Montant -->
+    <div class="glass-panel" style="padding: 16px; border-radius: 14px; border-left: 4px solid #ef4444;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Montant Total Amendes</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); color: #f87171; display: flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-money-bill-wave"></i>
+        </div>
+      </div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #f87171;">{{ totalFinesAmount | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
+      <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">Cumul des amendes radars</div>
+    </div>
+
+    <!-- KPI 3: Réassignés -->
+    <div class="glass-panel" style="padding: 16px; border-radius: 14px; border-left: 4px solid #10b981;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Réassignés aux Conducteurs</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.15); color: #34d399; display: flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-user-check"></i>
+        </div>
+      </div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #34d399;">{{ totalReallocatedCount }} <span style="font-size: 0.8rem;">PV</span></div>
+      <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">Transférés aux clients locataires</div>
+    </div>
+
+    <!-- KPI 4: En Attente -->
+    <div class="glass-panel" style="padding: 16px; border-radius: 14px; border-left: 4px solid #f59e0b;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">En Attente d'Imputation</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; display: flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+      </div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #fbbf24;">{{ totalPendingCount }} <span style="font-size: 0.8rem;">PV</span></div>
+      <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">À réassigner au contrat concerné</div>
+    </div>
+  </div>
+
+  <!-- Table & Filters Panel -->
+  <div class="glass-panel main-radars-panel" style="padding: 24px; border-radius: 14px;">
+    <!-- Filter header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+      <div style="display: flex; gap: 8px;">
+        <button 
+          class="btn btn-sm"
+          [style.background]="activeFilter === 'ALL' ? '#3b82f6' : 'rgba(255,255,255,0.06)'"
+          [style.color]="activeFilter === 'ALL' ? 'white' : 'var(--text-muted)'"
+          style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 14px; cursor: pointer; font-weight: 600;"
+          (click)="activeFilter = 'ALL'">
+          Tous ({{ fines.length }})
+        </button>
+        <button 
+          class="btn btn-sm"
+          [style.background]="activeFilter === 'REASSIGNE' ? '#10b981' : 'rgba(255,255,255,0.06)'"
+          [style.color]="activeFilter === 'REASSIGNE' ? 'white' : 'var(--text-muted)'"
+          style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 14px; cursor: pointer; font-weight: 600;"
+          (click)="activeFilter = 'REASSIGNE'">
+          Réassignés ({{ totalReallocatedCount }})
+        </button>
+        <button 
+          class="btn btn-sm"
+          [style.background]="activeFilter === 'NON_REASSIGNE' ? '#f59e0b' : 'rgba(255,255,255,0.06)'"
+          [style.color]="activeFilter === 'NON_REASSIGNE' ? 'white' : 'var(--text-muted)'"
+          style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 14px; cursor: pointer; font-weight: 600;"
+          (click)="activeFilter = 'NON_REASSIGNE'">
+          En Attente ({{ totalPendingCount }})
+        </button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <input 
+          type="text" 
+          class="form-control" 
+          style="max-width: 260px; font-size: 0.85rem; padding: 6px 12px;"
+          placeholder="Rechercher PV, véhicule, client..." 
+          [(ngModel)]="searchTerm">
+      </div>
+    </div>
+
+    <!-- Table -->
     <div class="custom-table-container">
       <table class="custom-table">
         <thead>
           <tr>
-            <th>N° PV Radar</th>
-            <th>Véhicule</th>
-            <th>Lieu / Date</th>
-            <th>Montant Infraction</th>
+            <th>N° PV / Avis</th>
+            <th>Véhicule Concerné</th>
+            <th>Lieu & Date Infraction</th>
+            <th>Montant (MAD)</th>
             <th>Client Réassigné</th>
-            <th>Statut / Action</th>
+            <th>Statut Légal</th>
+            <th style="text-align: center;">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let f of fines">
-            <td><span style="font-weight: 700;">{{ f.ticketNumber }}</span></td>
-            <td>{{ f.vehicleName || 'N/A' }}</td>
-            <td>{{ f.violationLocation || 'N/A' }}</td>
-            <td style="font-weight: 700; color: #ef4444;">{{ f.fineAmount | number:'1.2-2' }} MAD</td>
-            <td>{{ f.clientName || 'Non réassigné' }}</td>
+          <tr *ngFor="let f of filteredFines">
+            <!-- N° PV -->
             <td>
-              <span *ngIf="f.reallocated" class="badge badge-RESERVE">Réassigné au Client</span>
-              <button *ngIf="!f.reallocated" class="btn btn-secondary btn-xs" (click)="reallocateFine(f)">Réassigner</button>
+              <span style="font-weight: 800; color: #60a5fa; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-file-shield"></i> {{ f.ticketNumber }}
+              </span>
+            </td>
+
+            <!-- Véhicule -->
+            <td>
+              <div style="font-weight: 700; color: #f1f5f9;">{{ f.vehicleName || 'Véhicule Flotte' }}</div>
+              <div *ngIf="f.vehicleRegistration" style="font-size: 0.75rem; color: var(--text-muted);">
+                <i class="fa-solid fa-car"></i> {{ f.vehicleRegistration }}
+              </div>
+            </td>
+
+            <!-- Lieu / Date -->
+            <td>
+              <div style="color: #cbd5e1; font-size: 0.85rem;">{{ f.violationLocation || 'Lieu non renseigné' }}</div>
+              <div *ngIf="f.violationDate" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+                <i class="fa-regular fa-calendar"></i> {{ f.violationDate | date:'dd/MM/yyyy HH:mm' }}
+              </div>
+            </td>
+
+            <!-- Montant -->
+            <td style="font-weight: 800; color: #ef4444; font-size: 0.95rem;">
+              {{ f.fineAmount | number:'1.2-2' }} MAD
+            </td>
+
+            <!-- Client Réassigné -->
+            <td>
+              <div *ngIf="f.clientName" style="font-weight: 600; color: #34d399; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-user-check"></i> {{ f.clientName }}
+              </div>
+              <span *ngIf="!f.clientName" style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">
+                Non réassigné
+              </span>
+            </td>
+
+            <!-- Statut -->
+            <td>
+              <span *ngIf="f.reallocated" class="badge" style="background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.35); padding: 4px 10px; font-size: 0.75rem; border-radius: 12px; font-weight: 700;">
+                <i class="fa-solid fa-check"></i> Réassigné au Conducteur
+              </span>
+              <span *ngIf="!f.reallocated" class="badge" style="background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.35); padding: 4px 10px; font-size: 0.75rem; border-radius: 12px; font-weight: 700;">
+                <i class="fa-solid fa-clock"></i> En Attente
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td style="text-align: center;">
+              <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                <button 
+                  *ngIf="!f.reallocated"
+                  class="btn btn-sm"
+                  style="background: #3b82f6; color: white; padding: 4px 10px; font-size: 0.75rem; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;"
+                  (click)="openReallocateModal(f)"
+                  title="Réassigner cette contravention au conducteur">
+                  <i class="fa-solid fa-user-plus"></i> Réassigner
+                </button>
+
+                <button 
+                  *ngIf="f.reallocated"
+                  class="btn btn-sm"
+                  style="background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.3); padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; cursor: pointer;"
+                  (click)="openReallocateModal(f)"
+                  title="Changer le conducteur réassigné">
+                  <i class="fa-solid fa-user-pen"></i> Modifier
+                </button>
+
+                <button 
+                  class="btn btn-sm"
+                  style="background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.25); padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; cursor: pointer;"
+                  (click)="deleteFine(f)"
+                  title="Supprimer ce PV">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>
-          <tr *ngIf="fines.length === 0">
-            <td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">Aucune infraction radar déclarée. Cliquez sur "Déclarer une Infraction".</td>
+
+          <tr *ngIf="filteredFines.length === 0">
+            <td colspan="7" style="text-align: center; padding: 36px 16px; color: var(--text-muted);">
+              <div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.5;"><i class="fa-solid fa-camera-retro"></i></div>
+              <div style="font-weight: 600; font-size: 0.95rem;">Aucune infraction radar trouvée.</div>
+              <div style="font-size: 0.8rem; margin-top: 4px;">Cliquez sur "Déclarer une Infraction" pour saisir un nouvel avis de contravention.</div>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- Angular Add Fine Modal Dialog -->
+  <!-- Modal 1: Declarer Infraction / PV Radar -->
   <div class="modal-backdrop" [class.active]="isModalOpen">
     <div class="modal-dialog glass-panel">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -52,42 +219,116 @@
 
       <form (ngSubmit)="submitFine()">
         <div class="form-group">
-          <label class="form-label">N° Avis d'Infraction / PV</label>
-          <input type="text" class="form-control" [(ngModel)]="newFine.ticketNumber" name="ticketNumber" required>
+          <label class="form-label">N° Avis d'Infraction / PV <span style="color: #ef4444;">*</span></label>
+          <input 
+            type="text" 
+            class="form-control" 
+            [(ngModel)]="newFine.ticketNumber" 
+            name="ticketNumber" 
+            placeholder="ex: PV-2026-88392" 
+            required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Sélectionner le Véhicule Concerné</label>
-          <select class="form-control" [(ngModel)]="newFine.vehicleId" name="vehicleId">
-            <option *ngFor="let v of vehicles" [value]="v.id">{{ v.brand }} {{ v.model }} ({{ v.registrationNumber }})</option>
-            <option *ngIf="vehicles.length === 0" [value]="1">Dacia Logan (12345-A-6)</option>
+          <label class="form-label">Véhicule Concerné <span style="color: #ef4444;">*</span></label>
+          <select class="form-control" [(ngModel)]="newFine.vehicleId" name="vehicleId" required>
+            <option [ngValue]="null" disabled>Sélectionnez un véhicule...</option>
+            <option *ngFor="let v of vehicles" [value]="v.id">
+              {{ v.brand }} {{ v.model }} ({{ v.registrationNumber }})
+            </option>
           </select>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
-            <label class="form-label">Lieu de l'Infraction</label>
-            <input type="text" class="form-control" [(ngModel)]="newFine.violationLocation" name="violationLocation" required>
+            <label class="form-label">Date & Heure de l'Infraction</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="newFine.violationDate" name="violationDate">
           </div>
           <div class="form-group">
-            <label class="form-label">Montant Contravention (MAD)</label>
-            <input type="number" class="form-control" [(ngModel)]="newFine.fineAmount" name="fineAmount" required>
+            <label class="form-label">Montant Contravention (MAD) <span style="color: #ef4444;">*</span></label>
+            <input type="number" class="form-control" [(ngModel)]="newFine.fineAmount" name="fineAmount" min="1" required>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Réassigner au Conducteur Client</label>
-          <select class="form-control" [(ngModel)]="newFine.clientId" name="clientId">
-            <option *ngFor="let c of clients" [value]="c.id">{{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }} ({{ c.cinPassport || c.iceNumber }})</option>
-            <option *ngIf="clients.length === 0" [value]="1">Youssef Benani (BE897654)</option>
+          <label class="form-label">Lieu de l'Infraction</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            [(ngModel)]="newFine.violationLocation" 
+            name="violationLocation" 
+            placeholder="ex: Autoroute A1 KM 42, Rabat">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Conducteur / Client Locataire (Optionnel)</label>
+          <select class="form-control" [(ngModel)]="newFine.reallocatedClientId" name="reallocatedClientId">
+            <option [ngValue]="null">-- Non réassigné (En attente d'imputation) --</option>
+            <option *ngFor="let c of clients" [value]="c.id">
+              {{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }} 
+              ({{ c.cinPassport || c.iceNumber || ('ID #' + c.id) }})
+            </option>
           </select>
+          <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">
+            Si le client est sélectionné, le PV sera automatiquement marqué comme <strong>Réassigné</strong>.
+          </small>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
-          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Déclarer & Réassigner</button>
+          <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="isSubmitting">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            <i class="fa-solid fa-check" *ngIf="!isSubmitting"></i>
+            <i class="fa-solid fa-spinner fa-spin" *ngIf="isSubmitting"></i>
+            {{ isSubmitting ? 'Enregistrement...' : 'Enregistrer le PV' }}
+          </button>
         </div>
       </form>
     </div>
   </div>
+
+  <!-- Modal 2: Reassign Fine to Client Modal -->
+  <div class="modal-backdrop" [class.active]="isReallocateModalOpen">
+    <div class="modal-dialog glass-panel" style="max-width: 480px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-user-check blue-icon"></i> Réassigner le PV au Conducteur</h2>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" (click)="closeReallocateModal()">&times;</button>
+      </div>
+
+      <div *ngIf="selectedFineForReallocate" style="margin-bottom: 20px;">
+        <div style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--bg-card-border); font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: var(--text-muted);">Avis d'infraction :</span>
+            <span style="font-weight: 700; color: #60a5fa;">{{ selectedFineForReallocate.ticketNumber }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: var(--text-muted);">Véhicule :</span>
+            <span style="font-weight: 600;">{{ selectedFineForReallocate.vehicleName }} ({{ selectedFineForReallocate.vehicleRegistration }})</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">Montant :</span>
+            <span style="font-weight: 800; color: #ef4444;">{{ selectedFineForReallocate.fineAmount | number:'1.2-2' }} MAD</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Sélectionner le Client Conducteur :</label>
+          <select class="form-control" [(ngModel)]="selectedReallocateClientId" name="reallocateClientId">
+            <option [ngValue]="null" disabled>Sélectionnez le client conducteur...</option>
+            <option *ngFor="let c of clients" [value]="c.id">
+              {{ c.clientType === 'ENTREPRISE' ? c.companyName : (c.firstName + ' ' + c.lastName) }} 
+              ({{ c.cinPassport || c.iceNumber || ('ID #' + c.id) }})
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+        <button type="button" class="btn btn-secondary" (click)="closeReallocateModal()">Annuler</button>
+        <button type="button" class="btn btn-primary" (click)="confirmReallocate()">
+          <i class="fa-solid fa-check"></i> Valider la Réassignation
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+

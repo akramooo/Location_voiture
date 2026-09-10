@@ -24,46 +24,14 @@ export class DashboardComponent implements OnInit {
     revPac: 0,
     activeDepositsTotal: 0,
     imminentAlertsCount: 0,
-    totalExpenses: 5000,
-    totalRadarFines: 300
+    totalExpenses: 0,
+    totalRadarFines: 0
   };
 
   vehicles: Vehicle[] = [];
   clients: Client[] = [];
-  expenses: VehicleExpense[] = [
-    {
-      id: 1,
-      vehicleId: 1,
-      vehicleName: 'Dacia Logan (12345-A-6)',
-      category: 'ASSURANCE',
-      amount: 3200,
-      expenseDate: '2026-08-20',
-      providerName: 'RMA Assurance',
-      notes: 'Prime d\'assurance annuelle'
-    },
-    {
-      id: 2,
-      vehicleId: 4,
-      vehicleName: 'Volkswagen Golf 8 (44556-H-8)',
-      category: 'VIDANGE',
-      amount: 1800,
-      expenseDate: '2026-08-24',
-      providerName: 'AutoHall Casablanca',
-      notes: 'Vidange 5W30 + Filtres'
-    }
-  ];
-
-  fines: RadarFine[] = [
-    {
-      id: 1,
-      ticketNumber: 'PV-2026-99881',
-      vehicleName: 'Dacia Logan (12345-A-6)',
-      violationLocation: 'Autoroute A1 KM 24',
-      fineAmount: 300,
-      clientName: 'Youssef Benani',
-      reallocated: true
-    }
-  ];
+  expenses: VehicleExpense[] = [];
+  fines: RadarFine[] = [];
 
   isModalOpen = false;
 
@@ -95,18 +63,22 @@ export class DashboardComponent implements OnInit {
   loadExpenses(): void {
     this.apiService.get<VehicleExpense[]>('/fleet/expenses').subscribe({
       next: (data) => {
-        if (data && data.length > 0) this.expenses = data;
+        this.expenses = data || [];
       },
-      error: () => {}
+      error: () => {
+        this.expenses = [];
+      }
     });
   }
 
   loadFines(): void {
     this.apiService.get<RadarFine[]>('/billing/radar-fines').subscribe({
       next: (data) => {
-        if (data && data.length > 0) this.fines = data;
+        this.fines = data || [];
       },
-      error: () => {}
+      error: () => {
+        this.fines = [];
+      }
     });
   }
 
