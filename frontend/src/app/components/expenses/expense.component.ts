@@ -138,7 +138,7 @@ export class ExpenseComponent implements OnInit {
   }
 
   saveVehicleStatus(): void {
-    if (!this.selectedExpenseForStatus) return;
+    if (!this.selectedExpenseForStatus || !this.selectedExpenseForStatus.vehicleId) return;
     const vehicleId = this.selectedExpenseForStatus.vehicleId;
     const newStatus = this.selectedNewVehicleStatus;
 
@@ -148,10 +148,8 @@ export class ExpenseComponent implements OnInit {
         this.closeVehicleStatusModal();
         this.toastService.success(`Statut du véhicule mis à jour : ${newStatus}`, 'Véhicule Actualisé');
       },
-      error: () => {
-        this.updateLocalVehicleStatus(vehicleId, newStatus);
-        this.closeVehicleStatusModal();
-        this.toastService.success(`Statut du véhicule mis à jour : ${newStatus}`, 'Véhicule Actualisé');
+      error: (err) => {
+        this.toastService.error(err?.error?.message || 'Erreur lors de la mise à jour du statut', 'Erreur');
       }
     });
   }
@@ -211,34 +209,34 @@ export class ExpenseComponent implements OnInit {
     return this.expenses.filter(e => e.category === this.selectedCategoryFilter);
   }
 
-  getCategorySum(cat: string): number {
-    const valids = this.validatedExpenses;
+  getCategorySum(cat: string, onlyValidated: boolean = false): number {
     if (cat === 'ALL') {
-      return this.getTotalExpenses();
+      return this.getTotalExpenses(onlyValidated);
     }
+    const list = (onlyValidated || cat === 'ASSURANCE') ? this.validatedExpenses : this.expenses;
     if (cat === 'PNEUS_REPARATIONS') {
-      return valids
+      return list
         .filter(e => e.category === 'PNEUMATIQUES' || e.category === 'REPARATION' || e.category === 'CARROSSERIE')
         .reduce((sum, e) => sum + (e.amount || 0), 0);
     }
-    return valids
+    return list
       .filter(e => e.category === cat)
       .reduce((sum, e) => sum + (e.amount || 0), 0);
   }
 
-  getCategoryCount(cat: string): number {
-    const valids = this.validatedExpenses;
-    if (cat === 'ALL') return valids.length;
+  getCategoryCount(cat: string, onlyValidated: boolean = false): number {
+    if (cat === 'ALL') return this.expenses.length;
+    const list = (onlyValidated || cat === 'ASSURANCE') ? this.validatedExpenses : this.expenses;
     if (cat === 'PNEUS_REPARATIONS') {
-      return valids.filter(e => e.category === 'PNEUMATIQUES' || e.category === 'REPARATION' || e.category === 'CARROSSERIE').length;
+      return list.filter(e => e.category === 'PNEUMATIQUES' || e.category === 'REPARATION' || e.category === 'CARROSSERIE').length;
     }
-    return valids.filter(e => e.category === cat).length;
+    return list.filter(e => e.category === cat).length;
   }
 
-  getCategoryPercentage(cat: string): number {
+  getCategoryPercentage(cat: string, onlyValidated: boolean = false): number {
     const total = this.getTotalExpenses();
     if (total === 0) return 0;
-    const sum = this.getCategorySum(cat);
+    const sum = this.getCategorySum(cat, onlyValidated);
     return Math.round((sum / total) * 1000) / 10;
   }
 
@@ -247,8 +245,9 @@ export class ExpenseComponent implements OnInit {
     return this.getTotalExpenses() / vehCount;
   }
 
-  getTotalExpenses(): number {
-    return this.validatedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  getTotalExpenses(onlyValidated: boolean = false): number {
+    const list = onlyValidated ? this.validatedExpenses : this.expenses;
+    return list.reduce((sum, e) => sum + (e.amount || 0), 0);
   }
 
   getPendingExpensesCount(): number {
