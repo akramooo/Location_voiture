@@ -38,11 +38,13 @@ public class FleetExpenseServiceImpl implements FleetExpenseService {
             map.put("id", log.getId());
             map.put("vehicleId", log.getVehicle() != null ? log.getVehicle().getId() : null);
             map.put("vehicleName", log.getVehicle() != null ? log.getVehicle().getBrand() + " " + log.getVehicle().getModel() + " (" + log.getVehicle().getRegistrationNumber() + ")" : "Véhicule");
+            map.put("vehicleStatus", log.getVehicle() != null && log.getVehicle().getStatus() != null ? log.getVehicle().getStatus().name() : "DISPONIBLE");
             map.put("category", log.getServiceType() != null ? log.getServiceType() : "VIDANGE");
             map.put("amount", log.getCost() != null ? log.getCost() : 0.0);
             map.put("expenseDate", log.getServiceDate() != null ? log.getServiceDate().toString() : LocalDate.now().toString());
             map.put("providerName", log.getGarageName() != null ? log.getGarageName() : "Prestataire");
             map.put("notes", log.getNotes());
+            map.put("status", log.getStatus() != null ? log.getStatus() : "VALIDE");
             return map;
         }).collect(Collectors.toList());
     }
@@ -66,6 +68,13 @@ public class FleetExpenseServiceImpl implements FleetExpenseService {
         LocalDate expenseDate = expenseDateStr != null ? LocalDate.parse(expenseDateStr) : LocalDate.now();
         String providerName = payload.get("providerName") != null ? String.valueOf(payload.get("providerName")) : "";
         String notes = payload.get("notes") != null ? String.valueOf(payload.get("notes")) : "";
+        String status = payload.get("status") != null ? String.valueOf(payload.get("status")) : "VALIDE";
+
+        Boolean setMaintenance = payload.get("setVehicleInMaintenance") != null && Boolean.parseBoolean(String.valueOf(payload.get("setVehicleInMaintenance")));
+        if (setMaintenance) {
+            vehicle.setStatus(com.rentflow.domain.VehicleStatus.EN_MAINTENANCE);
+            vehicleRepository.save(vehicle);
+        }
 
         MaintenanceLog log = MaintenanceLog.builder()
                 .vehicle(vehicle)
@@ -74,7 +83,7 @@ public class FleetExpenseServiceImpl implements FleetExpenseService {
                 .serviceDate(expenseDate)
                 .garageName(providerName)
                 .notes(notes)
-                .status("TERMINE")
+                .status(status)
                 .build();
 
         log = maintenanceLogRepository.save(log);
@@ -83,12 +92,61 @@ public class FleetExpenseServiceImpl implements FleetExpenseService {
         res.put("id", log.getId());
         res.put("vehicleId", vehicle.getId());
         res.put("vehicleName", vehicle.getBrand() + " " + vehicle.getModel() + " (" + vehicle.getRegistrationNumber() + ")");
+        res.put("vehicleStatus", vehicle.getStatus() != null ? vehicle.getStatus().name() : "DISPONIBLE");
         res.put("category", log.getServiceType());
         res.put("amount", log.getCost());
         res.put("expenseDate", log.getServiceDate().toString());
         res.put("providerName", log.getGarageName());
         res.put("notes", log.getNotes());
+        res.put("status", log.getStatus());
 
+        return res;
+    }
+
+    @Override
+    public Map<String, Object> validateExpense(Long id) {
+        MaintenanceLog log = maintenanceLogRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Dépense introuvable"));
+        log.setStatus("VALIDE");
+        maintenanceLogRepository.save(log);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("id", log.getId());
+        res.put("status", log.getStatus());
+        if (log.getVehicle() != null) {
+            res.put("vehicleId", log.getVehicle().getId());
+            res.put("vehicleStatus", log.getVehicle().getStatus() != null ? log.getVehicle().getStatus().name() : "DISPONIBLE");
+        }
+        return res;
+    }
+
+    @Override
+    public Map<String, Object> updateExpenseStatus(Long id, String status) {
+        MaintenanceLog log = maintenanceLogRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Dépense introuvable"));
+        log.setStatus(status);
+        maintenanceLogRepository.save(log);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("id", log.getId());
+        res.put("status", log.getStatus());
+        return res;
+    }
+
+    @Override
+    public Map<String, Object> updateVehicleStatus(Long vehicleId, String status) {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new IllegalArgumentException("Véhicule introuvable"));
+        try {
+            vehicle.setStatus(com.rentflow.domain.VehicleStatus.valueOf(status.toUpperCase()));
+            vehicleRepository.save(vehicle);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Statut de véhicule invalide: " + status);
+        }
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("vehicleId", vehicle.getId());
+        res.put("vehicleStatus", vehicle.getStatus().name());
         return res;
     }
 

@@ -263,7 +263,7 @@ export class OcrParserService {
   private extractCinNames(lines: string[], rawText: string, result: OcrScanResult): void {
     if (result.firstName && result.lastName) return;
 
-    // Mots officiels imprimés sur toutes les cartes et bruits OCR à ignorer
+    // Termes officiels d'en-tête et mots-clés administratifs à ignorer
     const IGNORED_TERMS = new Set([
       'ROYAUME', 'DU', 'MAROC', 'CARTE', 'NATIONALE', 'IDENTITE', 'DIDENTITE', 'D\'IDENTITE',
       'PERMIS', 'DE', 'CONDUIRE', 'MINISTERE', 'DIRECTION', 'GENERALE', 'SURETE',
@@ -271,32 +271,55 @@ export class OcrParserService {
       'NEE', 'NÉE', 'A', 'À', 'AU', 'AUX', 'DES', 'ET', 'FILS', 'FILLE', 'CAN', 'CNIE', 'CIN',
       'SIGNATURE', 'TITULAIRE', 'AUTORITE', 'DIRECTEUR', 'GENERAL', 'AMN', 'WATANI', 'MAMLAKA',
       'MAGHRIBIYA', 'BATAQA', 'WATANIYA', 'TAARIF', 'LENOVO', 'HP', 'DELL', 'SAMSUNG', 'APPLE',
-      'VILLE', 'COMMUNE', 'PROVINCE', 'DATE', 'LIEU', 'NAISSANCE', 'MALL', 'AGILA', 'CAY'
+      'VILLE', 'COMMUNE', 'PROVINCE', 'DATE', 'LIEU', 'NAISSANCE', 'MALL', 'AGILA', 'CAY',
+      'KELAA', 'SRAGHNA', 'EL KELAA DES SRAGHNA', 'CASABLANCA', 'RABAT', 'MARRAKECH', 'FES'
     ]);
 
-    // 1. Parcourir les lignes lues par l'OCR sur la carte
+    // 1. Repérer la ligne de date de naissance (sur la CIN, les noms sont TOUJOURS placés AVANT la date de naissance)
+    let birthLineIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const upper = lines[i].toUpperCase();
+      if (/N[ÉE]\s*(?:LE)?|DATE\s+DE\s+NAISSANCE/.test(upper) || /\b(?:19|20)\d{2}\b/.test(upper)) {
+        birthLineIndex = i;
+        break;
+      }
+    }
+
+    // Zone des noms = toutes les lignes situées entre le haut et la date de naissance
+    const nameZoneLines = birthLineIndex > 0 ? lines.slice(0, birthLineIndex) : lines;
+
     const detectedNameLines: string[] = [];
 
-    for (const rawLine of lines) {
+    for (const rawLine of nameZoneLines) {
       const upperLine = rawLine.toUpperCase().trim();
 
-      // Ignorer les lignes d'en-tête, de date de naissance, de validité ou du N° CIN
-      if (
-        /ROYAUME|CARTE NATIONALE|VALABLE|N[ÉE]\s+LE|CAN\s*\d|N°\s*[A-Z]/.test(upperLine) ||
-        /\d{2}[\.\/\-]\d{2}[\.\/\-]\d{4}/.test(upperLine)
-      ) {
+      // Ignorer l'en-tête (Royaume du Maroc, etc.) ou toute ligne contenant un chiffre
+      if (/ROYAUME|CARTE NATIONALE|IDENTITE|MAMLAKA|BATAQA|\d/.test(upperLine)) {
         continue;
       }
 
-      // Nettoyer la ligne pour ne garder que les lettres latines lues sur la carte
-      const cleanLine = rawLine.replace(/[^A-Za-zÀ-ÿ\s\-']/g, '').trim();
-      const upperClean = cleanLine.toUpperCase();
+      // Extraire les mots latins majuscules de la ligne (ignorer le bruit arabe OCR)
+      const words = rawLine.split(/\s+/);
+      const validWords: string[] = [];
 
-      // Les vrais noms sur la carte sont en MAJUSCULES (au moins 2 lettres) et ne sont pas des mots de l'en-tête
-      const isPureUppercase = cleanLine.length >= 2 && cleanLine === cleanLine.toUpperCase();
+      for (const w of words) {
+        // Enlever la ponctuation
+        const cleanWord = w.replace(/[^A-Za-zÀ-ÿ\-']/g, '').trim();
+        const upperWord = cleanWord.toUpperCase();
 
-      if (isPureUppercase && !IGNORED_TERMS.has(upperClean) && !result.cinPassport?.includes(upperClean)) {
-        detectedNameLines.push(cleanLine);
+        // Un mot de nom fait au moins 2 lettres, est en majuscules et n'est pas un mot parasite
+        if (
+          cleanWord.length >= 2 &&
+          cleanWord === cleanWord.toUpperCase() &&
+          !IGNORED_TERMS.has(upperWord) &&
+          !result.cinPassport?.includes(upperWord)
+        ) {
+          validWords.push(cleanWord);
+        }
+      }
+
+      if (validWords.length > 0) {
+        detectedNameLines.push(validWords.join(' '));
       }
     }
 

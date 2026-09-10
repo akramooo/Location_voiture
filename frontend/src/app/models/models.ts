@@ -184,11 +184,13 @@ export interface VehicleExpense {
   id?: number;
   vehicleId: number;
   vehicleName?: string;
-  category: 'VIDANGE' | 'PNEUMATIQUES' | 'ASSURANCE' | 'VISITE_TECHNIQUE' | 'VIGNETTE' | 'CARROSSERIE' | 'CARBURANT' | 'REPARATION';
+  vehicleStatus?: string; // DISPONIBLE, LOUE, EN_MAINTENANCE, BLOQUE_LITIGE, EN_NETTOYAGE
+  category: 'VIDANGE' | 'PNEUMATIQUES' | 'ASSURANCE' | 'VISITE_TECHNIQUE' | 'VIGNETTE' | 'CARROSSERIE' | 'CARBURANT' | 'REPARATION' | string;
   amount: number;
   expenseDate: string;
   providerName?: string;
   notes?: string;
+  status?: 'VALIDE' | 'EN_ATTENTE' | 'PAYE' | 'TERMINE' | string;
 }
 
 export interface AuditLog {

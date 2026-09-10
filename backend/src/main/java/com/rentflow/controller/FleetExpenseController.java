@@ -30,6 +30,35 @@ public class FleetExpenseController {
         }
     }
 
+    @PutMapping("/{id}/validate")
+    public ResponseEntity<?> validateExpense(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(fleetExpenseService.validateExpense(id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<?> updateExpenseStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        try {
+            String status = payload.get("status");
+            return ResponseEntity.ok(fleetExpenseService.updateExpenseStatus(id, status));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/vehicles/{vehicleId}/status")
+    public ResponseEntity<?> updateVehicleStatus(@PathVariable Long vehicleId, @RequestBody Map<String, String> payload) {
+        try {
+            String status = payload.get("status");
+            return ResponseEntity.ok(fleetExpenseService.updateVehicleStatus(vehicleId, status));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteExpense(@PathVariable Long id) {
         fleetExpenseService.deleteFleetExpense(id);
