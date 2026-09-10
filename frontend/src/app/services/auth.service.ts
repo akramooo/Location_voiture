@@ -95,14 +95,7 @@ export class AuthService {
         return JSON.parse(userStr);
       } catch (e) {}
     }
-    return {
-      username: 'admin',
-      email: 'admin@rentflow.ma',
-      fullName: 'Amine El Amrani',
-      phone: '+212 6 00 00 00 00',
-      role: 'ADMIN_AGENCE',
-      tenantName: 'Atlas Rent-a-Car Casablanca'
-    };
+    return null;
   }
 
   isSuperAdmin(): boolean {

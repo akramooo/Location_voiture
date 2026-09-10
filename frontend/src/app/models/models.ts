@@ -140,6 +140,48 @@ export interface Cheque {
   createdAt?: string;
 }
 
+export interface AgencySettings {
+  id?: number;
+  name: string;
+  subdomain?: string;
+  iceNumber?: string;
+  ifNumber?: string;
+  rcNumber?: string;
+  patenteNumber?: string;
+  tvaRate: number;
+  address?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  logoUrl?: string;
+  whatsappNumber?: string;
+
+  // Règles Contrat
+  depositDefault: number;
+  dailyKmIncluded: number;
+  extraKmRate: number;
+  toleranceHours: number;
+  minDriverAge: number;
+  minLicenseYears: number;
+  termsAndConditions?: string;
+
+  // Facturation & Banque
+  bankRib?: string;
+  invoiceFooter?: string;
+  contractPrefix?: string;
+  invoicePrefix?: string;
+
+  // Alertes Flotte
+  alertAssuranceDays: number;
+  alertVisiteTechDays: number;
+  alertVignetteDays: number;
+
+  // WhatsApp Templates (Option 1 Gratuite)
+  whatsappTemplateReservation?: string;
+  whatsappTemplateReturn?: string;
+  whatsappTemplateFine?: string;
+}
+
 export interface RadarFine {
   id?: number;
   tenantId?: number;

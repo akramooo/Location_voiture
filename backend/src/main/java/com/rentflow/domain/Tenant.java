@@ -37,6 +37,47 @@ public class Tenant {
     private String phone;
     private String email;
     private String logoUrl;
+    private String whatsappNumber;
+
+    // Règles Contrats & Exploitation
+    @Builder.Default
+    private Double depositDefault = 5000.0;
+    @Builder.Default
+    private Integer dailyKmIncluded = 0; // 0 = illimité
+    @Builder.Default
+    private Double extraKmRate = 2.0;
+    @Builder.Default
+    private Integer toleranceHours = 2;
+    @Builder.Default
+    private Integer minDriverAge = 21;
+    @Builder.Default
+    private Integer minLicenseYears = 2;
+    @Column(columnDefinition = "TEXT")
+    private String termsAndConditions;
+
+    // Facturation & Banque
+    private String bankRib;
+    private String invoiceFooter;
+    @Builder.Default
+    private String contractPrefix = "LOC-";
+    @Builder.Default
+    private String invoicePrefix = "FAC-";
+
+    // Alertes Flotte
+    @Builder.Default
+    private Integer alertAssuranceDays = 30;
+    @Builder.Default
+    private Integer alertVisiteTechDays = 15;
+    @Builder.Default
+    private Integer alertVignetteDays = 30;
+
+    // Modèles WhatsApp (Option 1 Gratuite Direct Deeplink)
+    @Column(columnDefinition = "TEXT")
+    private String whatsappTemplateReservation;
+    @Column(columnDefinition = "TEXT")
+    private String whatsappTemplateReturn;
+    @Column(columnDefinition = "TEXT")
+    private String whatsappTemplateFine;
 
     // SaaS Subscription & Quotas
     @Builder.Default

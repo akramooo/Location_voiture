@@ -1,0 +1,391 @@
+<div class="settings-component fade-in">
+  <!-- Page Header -->
+  <div class="settings-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h1 class="page-title"><i class="fa-solid fa-sliders blue-icon"></i> Paramètres & Configuration de l'Agence</h1>
+      <p class="page-subtitle">Personnalisez votre identité légale, vos règles de location, votre logo MinIO et vos modèles WhatsApp.</p>
+    </div>
+    <button class="btn btn-primary" (click)="saveSettings()" [disabled]="isSaving" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700;">
+      <i class="fa-solid fa-spinner fa-spin" *ngIf="isSaving"></i>
+      <i class="fa-solid fa-floppy-disk" *ngIf="!isSaving"></i>
+      {{ isSaving ? 'Enregistrement...' : 'Enregistrer les Modifications' }}
+    </button>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="glass-panel" style="padding: 6px; border-radius: 12px; margin-bottom: 24px; display: flex; gap: 8px; flex-wrap: wrap;">
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'agency'" 
+      (click)="activeTab = 'agency'">
+      <i class="fa-solid fa-building"></i> Identité & Coordonnées
+    </button>
+
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'rental'" 
+      (click)="activeTab = 'rental'">
+      <i class="fa-solid fa-file-contract"></i> Règles Contrats & Caution
+    </button>
+
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'billing'" 
+      (click)="activeTab = 'billing'">
+      <i class="fa-solid fa-receipt"></i> Facturation & Banque
+    </button>
+
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'whatsapp'" 
+      (click)="activeTab = 'whatsapp'"
+      style="position: relative;">
+      <i class="fa-brands fa-whatsapp" style="color: #25d366;"></i> WhatsApp Direct (100% Gratuit)
+      <span class="badge" style="background: #25d366; color: black; font-size: 0.65rem; margin-left: 6px; font-weight: 800; border-radius: 6px;">0 MAD</span>
+    </button>
+
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'alerts'" 
+      (click)="activeTab = 'alerts'">
+      <i class="fa-solid fa-bell"></i> Délais des Alertes Flotte
+    </button>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: IDENTITÉ AGENCE & COORDONNÉES                                     -->
+  <!-- ========================================================================= -->
+  <div class="glass-panel tab-content-panel" *ngIf="activeTab === 'agency'" style="padding: 28px; border-radius: 16px;">
+    <h3 style="font-size: 1.15rem; font-weight: 700; color: white; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+      <i class="fa-solid fa-building blue-icon"></i> Identité Commerciale & Mentions Légales Maroc
+    </h3>
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px; align-items: start;">
+      <div>
+        <div class="form-group">
+          <label class="form-label">Nom Commercial de l'Agence <span style="color: #ef4444;">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="settings.name" placeholder="Ex: Atlas Rent-a-Car Casablanca">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Numéro ICE (15 chiffres)</label>
+            <input type="text" class="form-control" [(ngModel)]="settings.iceNumber" placeholder="Ex: 80234567800012">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Registre de Commerce (RC)</label>
+            <input type="text" class="form-control" [(ngModel)]="settings.rcNumber" placeholder="Ex: RCS Casa B 802345">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Identifiant Fiscal (IF)</label>
+            <input type="text" class="form-control" [(ngModel)]="settings.ifNumber" placeholder="Ex: 45678901">
+          </div>
+          <div class="form-group">
+            <label class="form-label">N° de Patente</label>
+            <input type="text" class="form-control" [(ngModel)]="settings.patenteNumber" placeholder="Ex: 7711A">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Ville Siège</label>
+            <input type="text" class="form-control" [(ngModel)]="settings.city" placeholder="Ex: Casablanca">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Adresse Complète</label>
+            <input type="text" class="form-control" [(ngModel)]="settings.address" placeholder="Ex: Angle Bd Zerktouni & Bd d'Anfa">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Téléphone Fixe / Comptoir</label>
+            <input type="tel" class="form-control" [(ngModel)]="settings.phone" placeholder="Ex: +212 5 22 00 11 22">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Commercial</label>
+            <input type="email" class="form-control" [(ngModel)]="settings.email" placeholder="Ex: contact@atlasrent.ma">
+          </div>
+        </div>
+      </div>
+
+      <!-- Logo MinIO Box -->
+      <div class="glass-card" style="padding: 20px; text-align: center; border: 1px dashed rgba(255,255,255,0.15); border-radius: 14px;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: #cbd5e1;">
+          <i class="fa-solid fa-image" style="color: #60a5fa;"></i> Logo de l'Agence
+        </h4>
+        
+        <div *ngIf="previewLogoUrl" style="margin-bottom: 16px;">
+          <img [src]="previewLogoUrl" style="max-width: 100%; max-height: 120px; object-fit: contain; border-radius: 8px; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);" alt="Logo Agence">
+          <div style="margin-top: 8px;">
+            <button class="btn btn-secondary btn-xs" (click)="removeLogo()" style="color: #f87171;">
+              <i class="fa-solid fa-trash"></i> Retirer le logo
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="!previewLogoUrl" style="padding: 24px 12px; color: var(--text-muted); font-size: 0.85rem;">
+          <i class="fa-regular fa-image" style="font-size: 2.5rem; opacity: 0.4; margin-bottom: 8px; display: block;"></i>
+          <span>Aucun logo configuré</span>
+        </div>
+
+        <label class="btn btn-secondary btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;">
+          <i class="fa-solid fa-cloud-arrow-up" *ngIf="!isUploadingLogo"></i>
+          <i class="fa-solid fa-spinner fa-spin" *ngIf="isUploadingLogo"></i>
+          <span>{{ isUploadingLogo ? 'Upload MinIO...' : 'Téléverser un logo (PNG/JPG)' }}</span>
+          <input type="file" (change)="onLogoFileSelected($event)" accept="image/*" style="display: none;">
+        </label>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 8px;">
+          Ce logo sera imprimé sur vos contrats PDF et factures clients.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: RÈGLES DE CONTRATS & CAUTION                                      -->
+  <!-- ========================================================================= -->
+  <div class="glass-panel tab-content-panel" *ngIf="activeTab === 'rental'" style="padding: 28px; border-radius: 16px;">
+    <h3 style="font-size: 1.15rem; font-weight: 700; color: white; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+      <i class="fa-solid fa-file-contract blue-icon"></i> Règles Métier de Location & Restitution
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 24px;">
+      <div class="form-group">
+        <label class="form-label">Caution / Dépôt par Défaut (MAD)</label>
+        <div style="position: relative;">
+          <input type="number" class="form-control" [(ngModel)]="settings.depositDefault" style="padding-left: 36px;">
+          <i class="fa-solid fa-shield-halved" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #60a5fa;"></i>
+        </div>
+        <small style="color: var(--text-muted); font-size: 0.75rem;">Montant proposé automatiquement lors d'une nouvelle réservation.</small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Kilométrage Journalier Inclus</label>
+        <select class="form-control" [(ngModel)]="settings.dailyKmIncluded">
+          <option [ngValue]="0">Kilométrage Illimité (0 km)</option>
+          <option [ngValue]="200">200 km / jour</option>
+          <option [ngValue]="250">250 km / jour</option>
+          <option [ngValue]="300">300 km / jour</option>
+          <option [ngValue]="400">400 km / jour</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tarif Km Supplémentaire (MAD / km)</label>
+        <input type="number" step="0.5" class="form-control" [(ngModel)]="settings.extraKmRate">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tolérance Retard Restitution (Heures)</label>
+        <input type="number" class="form-control" [(ngModel)]="settings.toleranceHours">
+        <small style="color: var(--text-muted); font-size: 0.75rem;">Délai de grâce avant facturation d'un jour supplémentaire.</small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Âge Minimum du Conducteur (Ans)</label>
+        <input type="number" class="form-control" [(ngModel)]="settings.minDriverAge">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Années de Permis Requises (Ans)</label>
+        <input type="number" class="form-control" [(ngModel)]="settings.minLicenseYears">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Conditions Générales de Location (CGL - Texte Juridique Imprimé)</label>
+      <textarea class="form-control" rows="4" [(ngModel)]="settings.termsAndConditions" placeholder="Insérer les clauses du contrat..."></textarea>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: FACTURATION, TVA & BANQUE                                         -->
+  <!-- ========================================================================= -->
+  <div class="glass-panel tab-content-panel" *ngIf="activeTab === 'billing'" style="padding: 28px; border-radius: 16px;">
+    <h3 style="font-size: 1.15rem; font-weight: 700; color: white; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+      <i class="fa-solid fa-receipt blue-icon"></i> Paramètres Fiscaux, TVA & Numérotation
+    </h3>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+      <div class="form-group">
+        <label class="form-label">Taux de TVA Applicable (%)</label>
+        <input type="number" step="0.5" class="form-control" [(ngModel)]="settings.tvaRate">
+        <small style="color: var(--text-muted); font-size: 0.75rem;">20% par défaut au Maroc pour la location de véhicules.</small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Préfixe Numérotation Contrats</label>
+        <input type="text" class="form-control" [(ngModel)]="settings.contractPrefix" placeholder="LOC-">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Préfixe Numérotation Factures</label>
+        <input type="text" class="form-control" [(ngModel)]="settings.invoicePrefix" placeholder="FAC-">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">RIB Bancaire Agence (Pour Virement / Chèque)</label>
+        <input type="text" class="form-control" [(ngModel)]="settings.bankRib" placeholder="Ex: Attijariwafa Bank - 007 780 0001234567890123 45">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Pied de Page & Mentions Légales Factures DGI</label>
+      <textarea class="form-control" rows="3" [(ngModel)]="settings.invoiceFooter" placeholder="Mentions légales, capital social, tribunal compétent..."></textarea>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 4: WHATSAPP DIRECT (OPTION 1 100% GRATUITE)                          -->
+  <!-- ========================================================================= -->
+  <div class="glass-panel tab-content-panel" *ngIf="activeTab === 'whatsapp'" style="padding: 28px; border-radius: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: white; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-brands fa-whatsapp" style="color: #25d366; font-size: 1.3rem;"></i> Intégration WhatsApp Direct (Click-to-Chat)
+        </h3>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">
+          <strong>100% GRATUIT & SANS ABONNEMENT</strong> : Génère un lien direct <code style="color: #34d399;">https://wa.me/212...</code> pré-rempli pour envoyer contrats, rappels et PV en 1 clic.
+        </p>
+      </div>
+
+      <div class="badge" style="background: rgba(37, 211, 102, 0.15); color: #25d366; border: 1px solid rgba(37, 211, 102, 0.35); padding: 6px 14px; font-weight: 700; border-radius: 20px;">
+        <i class="fa-solid fa-circle-check"></i> Actif & Illimité (0 MAD)
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 28px;">
+      <!-- Left: Template Editors -->
+      <div>
+        <div class="form-group">
+          <label class="form-label">Numéro WhatsApp Officiel de l'Agence</label>
+          <input type="tel" class="form-control" [(ngModel)]="settings.whatsappNumber" placeholder="+212 6 12 34 56 78">
+        </div>
+
+        <div style="margin-top: 20px;">
+          <label class="form-label" style="font-weight: 700; color: #60a5fa;">
+            1. Modèle : Confirmation de Réservation & Contrat
+          </label>
+          <textarea class="form-control" rows="3" [(ngModel)]="settings.whatsappTemplateReservation"></textarea>
+          <small style="color: var(--text-muted); font-size: 0.72rem; display: block; margin-top: 4px;">
+            Variables disponibles : <code style="color: #cbd5e1;">&#123;clientName&#125;</code>, <code style="color: #cbd5e1;">&#123;reservationNumber&#125;</code>, <code style="color: #cbd5e1;">&#123;vehicleName&#125;</code>, <code style="color: #cbd5e1;">&#123;startDate&#125;</code>, <code style="color: #cbd5e1;">&#123;endDate&#125;</code>, <code style="color: #cbd5e1;">&#123;totalAmount&#125;</code>, <code style="color: #cbd5e1;">&#123;agencyName&#125;</code>
+          </small>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <label class="form-label" style="font-weight: 700; color: #a855f7;">
+            2. Modèle : Rappel de Restitution de Véhicule
+          </label>
+          <textarea class="form-control" rows="3" [(ngModel)]="settings.whatsappTemplateReturn"></textarea>
+          <small style="color: var(--text-muted); font-size: 0.72rem; display: block; margin-top: 4px;">
+            Variables disponibles : <code style="color: #cbd5e1;">&#123;clientName&#125;</code>, <code style="color: #cbd5e1;">&#123;vehicleName&#125;</code>, <code style="color: #cbd5e1;">&#123;endDate&#125;</code>, <code style="color: #cbd5e1;">&#123;agencyCity&#125;</code>
+          </small>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <label class="form-label" style="font-weight: 700; color: #f43f5e;">
+            3. Modèle : Notification Avis de Contravention / PV Radar
+          </label>
+          <textarea class="form-control" rows="3" [(ngModel)]="settings.whatsappTemplateFine"></textarea>
+          <small style="color: var(--text-muted); font-size: 0.72rem; display: block; margin-top: 4px;">
+            Variables disponibles : <code style="color: #cbd5e1;">&#123;clientName&#125;</code>, <code style="color: #cbd5e1;">&#123;ticketNumber&#125;</code>, <code style="color: #cbd5e1;">&#123;vehicleName&#125;</code>, <code style="color: #cbd5e1;">&#123;violationDate&#125;</code>, <code style="color: #cbd5e1;">&#123;fineAmount&#125;</code>
+          </small>
+        </div>
+      </div>
+
+      <!-- Right: Interactive Live Simulator -->
+      <div class="glass-card" style="padding: 20px; border-radius: 14px; border: 1px solid rgba(37, 211, 102, 0.3); background: rgba(15, 23, 42, 0.85);">
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: #25d366; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-mobile-screen"></i> Simulateur d'Envoi WhatsApp Direct
+        </h4>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.78rem;">Type de message à tester :</label>
+          <select class="form-control" [(ngModel)]="simulatedTemplateType" style="font-size: 0.82rem;">
+            <option value="RESERVATION">1. Confirmation Réservation</option>
+            <option value="RETURN">2. Rappel Restitution</option>
+            <option value="FINE">3. Avis de Contravention (PV)</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.75rem;">Nom Client</label>
+            <input type="text" class="form-control" [(ngModel)]="testClientName" style="font-size: 0.8rem; padding: 4px 8px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.75rem;">N° Téléphone</label>
+            <input type="text" class="form-control" [(ngModel)]="testPhone" placeholder="0661234567" style="font-size: 0.8rem; padding: 4px 8px;">
+          </div>
+        </div>
+
+        <!-- WhatsApp Chat Bubble Preview -->
+        <div style="background: #0b141a; border-radius: 12px; padding: 14px; margin-top: 14px; border: 1px solid rgba(255,255,255,0.08); position: relative;">
+          <div style="font-size: 0.7rem; color: #8696a0; margin-bottom: 6px; display: flex; justify-content: space-between;">
+            <span>Aperçu du message WhatsApp généré :</span>
+            <span>Aujourd'hui</span>
+          </div>
+
+          <div style="background: #005c4b; color: #e9edef; padding: 10px 14px; border-radius: 8px; font-size: 0.82rem; line-height: 1.4; word-break: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.4);">
+            {{ getPreviewWhatsAppMessage() }}
+          </div>
+        </div>
+
+        <button 
+          class="btn btn-sm" 
+          style="background: #25d366; color: black; font-weight: 800; width: 100%; margin-top: 16px; padding: 10px; border-radius: 10px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(37,211,102,0.3);"
+          (click)="testSendWhatsApp()">
+          <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> Tester l'ouverture WhatsApp Direct
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 5: DÉLAIS DES ALERTES FLOTTE                                         -->
+  <!-- ========================================================================= -->
+  <div class="glass-panel tab-content-panel" *ngIf="activeTab === 'alerts'" style="padding: 28px; border-radius: 16px;">
+    <h3 style="font-size: 1.15rem; font-weight: 700; color: white; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+      <i class="fa-solid fa-bell blue-icon"></i> Seuils & Anticipation des Alertes Réglementaires
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+      <div class="glass-card" style="padding: 18px; border-radius: 12px; border-left: 4px solid #3b82f6;">
+        <div style="font-weight: 700; color: #60a5fa; margin-bottom: 8px;">
+          <i class="fa-solid fa-shield-halved"></i> Alerte Expiration Assurance
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Notifier (Jours avant expiration)</label>
+          <input type="number" class="form-control" [(ngModel)]="settings.alertAssuranceDays">
+          <small style="color: var(--text-muted); font-size: 0.75rem;">Ex: 30 jours avant le terme de la police d'assurance.</small>
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding: 18px; border-radius: 12px; border-left: 4px solid #10b981;">
+        <div style="font-weight: 700; color: #34d399; margin-bottom: 8px;">
+          <i class="fa-solid fa-clipboard-check"></i> Alerte Visite Technique
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Notifier (Jours avant expiration)</label>
+          <input type="number" class="form-control" [(ngModel)]="settings.alertVisiteTechDays">
+          <small style="color: var(--text-muted); font-size: 0.75rem;">Ex: 15 jours avant la date limite du contrôle technique.</small>
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding: 18px; border-radius: 12px; border-left: 4px solid #f59e0b;">
+        <div style="font-weight: 700; color: #fbbf24; margin-bottom: 8px;">
+          <i class="fa-solid fa-stamp"></i> Alerte Vignette Fiscale
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Notifier (Jours avant échéance)</label>
+          <input type="number" class="form-control" [(ngModel)]="settings.alertVignetteDays">
+          <small style="color: var(--text-muted); font-size: 0.75rem;">Ex: 30 jours avant la date limite de renouvellement.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

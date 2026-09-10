@@ -12,6 +12,7 @@ import { ChequeComponent } from './components/cheques/cheque.component';
 import { OcrScannerComponent } from './components/ocr-scanner/ocr-scanner.component';
 import { ExpenseComponent } from './components/expenses/expense.component';
 import { PricingComponent } from './components/pricing/pricing.component';
+import { SettingsComponent } from './components/settings/settings.component';
 import { SuperAdminComponent } from './components/super-admin/super-admin.component';
 import { authGuard } from './guards/auth.guard';
 import { superAdminGuard } from './guards/super-admin.guard';
@@ -32,5 +33,6 @@ export const routes: Routes = [
   { path: 'ocr', component: OcrScannerComponent, canActivate: [authGuard] },
   { path: 'radars', component: RadarsComponent, canActivate: [authGuard] },
   { path: 'pricing', component: PricingComponent, canActivate: [authGuard] },
+  { path: 'settings', component: SettingsComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '' }
 ];

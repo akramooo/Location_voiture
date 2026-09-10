@@ -13,8 +13,8 @@ import { ToastService } from '../../services/toast.service';
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
-  username = 'superadmin';
-  password = 'superadmin123';
+  username = '';
+  password = '';
   isLoading = false;
 
   constructor(
@@ -22,16 +22,6 @@ export class LoginComponent {
     private toastService: ToastService,
     private router: Router
   ) {}
-
-  setRoleDemo(role: 'SUPER_ADMIN' | 'ADMIN_AGENCE'): void {
-    if (role === 'SUPER_ADMIN') {
-      this.username = 'superadmin';
-      this.password = 'superadmin123';
-    } else {
-      this.username = 'admin';
-      this.password = 'admin123';
-    }
-  }
 
   onSubmit(): void {
     if (!this.username || !this.password) {
