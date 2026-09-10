@@ -193,6 +193,14 @@ export class ExpenseComponent implements OnInit {
     this.selectedCategoryFilter = cat;
   }
 
+  isValidated(e: VehicleExpense): boolean {
+    return e.status === 'VALIDE' || e.status === 'PAYE' || e.status === 'TERMINE';
+  }
+
+  get validatedExpenses(): VehicleExpense[] {
+    return this.expenses.filter(e => this.isValidated(e));
+  }
+
   get filteredExpenses(): VehicleExpense[] {
     if (this.selectedCategoryFilter === 'ALL') {
       return this.expenses;
@@ -204,25 +212,27 @@ export class ExpenseComponent implements OnInit {
   }
 
   getCategorySum(cat: string): number {
+    const valids = this.validatedExpenses;
     if (cat === 'ALL') {
       return this.getTotalExpenses();
     }
     if (cat === 'PNEUS_REPARATIONS') {
-      return this.expenses
+      return valids
         .filter(e => e.category === 'PNEUMATIQUES' || e.category === 'REPARATION' || e.category === 'CARROSSERIE')
-        .reduce((sum, e) => sum + e.amount, 0);
+        .reduce((sum, e) => sum + (e.amount || 0), 0);
     }
-    return this.expenses
+    return valids
       .filter(e => e.category === cat)
-      .reduce((sum, e) => sum + e.amount, 0);
+      .reduce((sum, e) => sum + (e.amount || 0), 0);
   }
 
   getCategoryCount(cat: string): number {
-    if (cat === 'ALL') return this.expenses.length;
+    const valids = this.validatedExpenses;
+    if (cat === 'ALL') return valids.length;
     if (cat === 'PNEUS_REPARATIONS') {
-      return this.expenses.filter(e => e.category === 'PNEUMATIQUES' || e.category === 'REPARATION' || e.category === 'CARROSSERIE').length;
+      return valids.filter(e => e.category === 'PNEUMATIQUES' || e.category === 'REPARATION' || e.category === 'CARROSSERIE').length;
     }
-    return this.expenses.filter(e => e.category === cat).length;
+    return valids.filter(e => e.category === cat).length;
   }
 
   getCategoryPercentage(cat: string): number {
@@ -233,12 +243,20 @@ export class ExpenseComponent implements OnInit {
   }
 
   getAverageCostPerVehicle(): number {
-    const vehCount = this.vehicles.length > 0 ? this.vehicles.length : 4;
+    const vehCount = this.vehicles.length > 0 ? this.vehicles.length : 1;
     return this.getTotalExpenses() / vehCount;
   }
 
   getTotalExpenses(): number {
-    return this.expenses.reduce((sum, e) => sum + e.amount, 0);
+    return this.validatedExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  }
+
+  getPendingExpensesCount(): number {
+    return this.expenses.filter(e => !this.isValidated(e)).length;
+  }
+
+  getPendingExpensesSum(): number {
+    return this.expenses.filter(e => !this.isValidated(e)).reduce((sum, e) => sum + (e.amount || 0), 0);
   }
 
   getVehicleStatusBadge(status?: string): { label: string, icon: string, bg: string, color: string, border: string } {

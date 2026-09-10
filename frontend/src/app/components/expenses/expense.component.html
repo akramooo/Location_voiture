@@ -20,15 +20,18 @@
       style="padding: 16px; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid #f59e0b;"
       (click)="filterByCat('ALL')">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Total TCO Flotte</span>
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Total TCO (Validé)</span>
         <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
           <i class="fa-solid fa-calculator"></i>
         </div>
       </div>
       <div style="font-size: 1.5rem; font-weight: 800; color: #fbbf24;">{{ getTotalExpenses() | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
       <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-muted);">
-        <span>{{ expenses.length }} Dépenses</span>
-        <span style="color: #60a5fa; font-weight: 600;">{{ getAverageCostPerVehicle() | number:'1.0-0' }} MAD/véh.</span>
+        <span>{{ validatedExpenses.length }} Validée(s)</span>
+        <span *ngIf="getPendingExpensesCount() > 0" style="color: #fbbf24; font-weight: 600;" title="Dépenses en attente de validation">
+          <i class="fa-solid fa-clock"></i> {{ getPendingExpensesCount() }} en attente
+        </span>
+        <span *ngIf="getPendingExpensesCount() === 0" style="color: #60a5fa; font-weight: 600;">{{ getAverageCostPerVehicle() | number:'1.0-0' }} MAD/véh.</span>
       </div>
     </div>
 
@@ -48,7 +51,7 @@
       <div style="font-size: 1.5rem; font-weight: 800; color: #60a5fa;">{{ getCategorySum('ASSURANCE') | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
       <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-muted);">
         <span>{{ getCategoryPercentage('ASSURANCE') }}% du TCO</span>
-        <span style="color: #34d399; font-weight: 600;">{{ getCategoryCount('ASSURANCE') }} Véhicule(s)</span>
+        <span style="color: #34d399; font-weight: 600;">{{ getCategoryCount('ASSURANCE') }} Validé(s)</span>
       </div>
     </div>
 
@@ -68,7 +71,7 @@
       <div style="font-size: 1.5rem; font-weight: 800; color: #c084fc;">{{ getCategorySum('VIDANGE') | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
       <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-muted);">
         <span>{{ getCategoryPercentage('VIDANGE') }}% du TCO</span>
-        <span style="color: #c084fc; font-weight: 600;">{{ getCategoryCount('VIDANGE') }} Entretien(s)</span>
+        <span style="color: #c084fc; font-weight: 600;">{{ getCategoryCount('VIDANGE') }} Validé(s)</span>
       </div>
     </div>
 
@@ -88,7 +91,7 @@
       <div style="font-size: 1.5rem; font-weight: 800; color: #34d399;">{{ getCategorySum('VISITE_TECHNIQUE') | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
       <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-muted);">
         <span>{{ getCategoryPercentage('VISITE_TECHNIQUE') }}% du TCO</span>
-        <span style="color: #34d399; font-weight: 600;">{{ getCategoryCount('VISITE_TECHNIQUE') }} Contrôle(s)</span>
+        <span style="color: #34d399; font-weight: 600;">{{ getCategoryCount('VISITE_TECHNIQUE') }} Validé(s)</span>
       </div>
     </div>
 
@@ -108,7 +111,7 @@
       <div style="font-size: 1.5rem; font-weight: 800; color: #fb7185;">{{ getCategorySum('PNEUS_REPARATIONS') | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
       <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-muted);">
         <span>{{ getCategoryPercentage('PNEUS_REPARATIONS') }}% du TCO</span>
-        <span style="color: #fb7185; font-weight: 600;">{{ getCategoryCount('PNEUS_REPARATIONS') }} Frais</span>
+        <span style="color: #fb7185; font-weight: 600;">{{ getCategoryCount('PNEUS_REPARATIONS') }} Validé(s)</span>
       </div>
     </div>
 
