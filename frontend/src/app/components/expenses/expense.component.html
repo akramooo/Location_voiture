@@ -9,23 +9,197 @@
     </button>
   </div>
 
-  <!-- Total Expense Summary -->
-  <div class="glass-panel" style="padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-    <div style="display: flex; align-items: center; gap: 16px;">
-      <div style="width: 46px; height: 46px; background: rgba(245, 158, 11, 0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fbbf24; font-size: 1.4rem;">
-        <i class="fa-solid fa-calculator"></i>
+  <!-- Row of 5 KPI Cards per TCO Category -->
+  <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    
+    <!-- KPI 1: Total Global -->
+    <div 
+      class="glass-panel" 
+      [style.borderColor]="selectedCategoryFilter === 'ALL' ? '#3b82f6' : 'var(--card-border)'"
+      [style.background]="selectedCategoryFilter === 'ALL' ? 'rgba(30, 41, 59, 0.9)' : 'var(--card-bg)'"
+      style="padding: 16px; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid #f59e0b;"
+      (click)="filterByCat('ALL')">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Total TCO Flotte</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+          <i class="fa-solid fa-calculator"></i>
+        </div>
       </div>
-      <div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Total Dépenses Entretien Flotte</div>
-        <div style="font-size: 1.6rem; font-weight: 800; color: #fbbf24;">{{ getTotalExpenses() | number:'1.2-2' }} MAD</div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #fbbf24;">{{ getTotalExpenses() | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
+      <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-muted);">
+        <span>{{ expenses.length }} Dépenses</span>
+        <span style="color: #60a5fa; font-weight: 600;">{{ getAverageCostPerVehicle() | number:'1.0-0' }} MAD/véh.</span>
       </div>
     </div>
-    <div style="font-size: 0.85rem; color: #60a5fa; font-weight: 600;">
-      <i class="fa-solid fa-chart-line"></i> Coût Moyen / Véhicule : {{ (getTotalExpenses() / 4) | number:'1.2-2' }} MAD
+
+    <!-- KPI 2: Assurance -->
+    <div 
+      class="glass-panel" 
+      [style.borderColor]="selectedCategoryFilter === 'ASSURANCE' ? '#3b82f6' : 'var(--card-border)'"
+      [style.background]="selectedCategoryFilter === 'ASSURANCE' ? 'rgba(30, 41, 59, 0.9)' : 'var(--card-bg)'"
+      style="padding: 16px; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid #3b82f6;"
+      (click)="filterByCat('ASSURANCE')">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Assurance & Taxes</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+      </div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #60a5fa;">{{ getCategorySum('ASSURANCE') | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
+      <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-muted);">
+        <span>{{ getCategoryPercentage('ASSURANCE') }}% du TCO</span>
+        <span style="color: #34d399; font-weight: 600;">{{ getCategoryCount('ASSURANCE') }} Véhicule(s)</span>
+      </div>
+    </div>
+
+    <!-- KPI 3: Vidange & Révision -->
+    <div 
+      class="glass-panel" 
+      [style.borderColor]="selectedCategoryFilter === 'VIDANGE' ? '#a855f7' : 'var(--card-border)'"
+      [style.background]="selectedCategoryFilter === 'VIDANGE' ? 'rgba(30, 41, 59, 0.9)' : 'var(--card-bg)'"
+      style="padding: 16px; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid #a855f7;"
+      (click)="filterByCat('VIDANGE')">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Vidanges & Filtres</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(168, 85, 247, 0.15); color: #c084fc; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+          <i class="fa-solid fa-oil-can"></i>
+        </div>
+      </div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #c084fc;">{{ getCategorySum('VIDANGE') | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
+      <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-muted);">
+        <span>{{ getCategoryPercentage('VIDANGE') }}% du TCO</span>
+        <span style="color: #c084fc; font-weight: 600;">{{ getCategoryCount('VIDANGE') }} Entretien(s)</span>
+      </div>
+    </div>
+
+    <!-- KPI 4: Visites Techniques -->
+    <div 
+      class="glass-panel" 
+      [style.borderColor]="selectedCategoryFilter === 'VISITE_TECHNIQUE' ? '#10b981' : 'var(--card-border)'"
+      [style.background]="selectedCategoryFilter === 'VISITE_TECHNIQUE' ? 'rgba(30, 41, 59, 0.9)' : 'var(--card-bg)'"
+      style="padding: 16px; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid #10b981;"
+      (click)="filterByCat('VISITE_TECHNIQUE')">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Visites Techniques</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.15); color: #34d399; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+          <i class="fa-solid fa-clipboard-check"></i>
+        </div>
+      </div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #34d399;">{{ getCategorySum('VISITE_TECHNIQUE') | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
+      <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-muted);">
+        <span>{{ getCategoryPercentage('VISITE_TECHNIQUE') }}% du TCO</span>
+        <span style="color: #34d399; font-weight: 600;">{{ getCategoryCount('VISITE_TECHNIQUE') }} Contrôle(s)</span>
+      </div>
+    </div>
+
+    <!-- KPI 5: Pneus & Réparations -->
+    <div 
+      class="glass-panel" 
+      [style.borderColor]="selectedCategoryFilter === 'PNEUS_REPARATIONS' ? '#f43f5e' : 'var(--card-border)'"
+      [style.background]="selectedCategoryFilter === 'PNEUS_REPARATIONS' ? 'rgba(30, 41, 59, 0.9)' : 'var(--card-bg)'"
+      style="padding: 16px; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid #f43f5e;"
+      (click)="filterByCat('PNEUS_REPARATIONS')">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Pneus & Réparations</span>
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(244, 63, 94, 0.15); color: #fb7185; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+          <i class="fa-solid fa-wrench"></i>
+        </div>
+      </div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #fb7185;">{{ getCategorySum('PNEUS_REPARATIONS') | number:'1.2-2' }} <span style="font-size: 0.8rem;">MAD</span></div>
+      <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-muted);">
+        <span>{{ getCategoryPercentage('PNEUS_REPARATIONS') }}% du TCO</span>
+        <span style="color: #fb7185; font-weight: 600;">{{ getCategoryCount('PNEUS_REPARATIONS') }} Frais</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Breakdown Distribution Bar -->
+  <div class="glass-panel" style="padding: 18px 20px; margin-bottom: 24px; border-radius: 14px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.8rem; font-weight: 700;">
+      <span style="color: #cbd5e1; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-chart-pie" style="color: #60a5fa;"></i> Répartition Budgétaire du TCO Flotte
+      </span>
+      <span style="color: var(--text-muted);">Total : {{ getTotalExpenses() | number:'1.2-2' }} MAD (100%)</span>
+    </div>
+
+    <!-- Multi-colored Segmented Progress Bar -->
+    <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.4); border-radius: 6px; overflow: hidden; display: flex; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);">
+      <div [style.width.%]="getCategoryPercentage('ASSURANCE')" style="background: #3b82f6; height: 100%; transition: width 0.3s ease;" [title]="'Assurances: ' + getCategoryPercentage('ASSURANCE') + '%'"></div>
+      <div [style.width.%]="getCategoryPercentage('VIDANGE')" style="background: #a855f7; height: 100%; transition: width 0.3s ease;" [title]="'Vidanges: ' + getCategoryPercentage('VIDANGE') + '%'"></div>
+      <div [style.width.%]="getCategoryPercentage('VISITE_TECHNIQUE')" style="background: #10b981; height: 100%; transition: width 0.3s ease;" [title]="'Visites Techniques: ' + getCategoryPercentage('VISITE_TECHNIQUE') + '%'"></div>
+      <div [style.width.%]="getCategoryPercentage('PNEUS_REPARATIONS')" style="background: #f43f5e; height: 100%; transition: width 0.3s ease;" [title]="'Pneus & Réparations: ' + getCategoryPercentage('PNEUS_REPARATIONS') + '%'"></div>
+    </div>
+
+    <!-- Legend -->
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; font-size: 0.78rem; color: var(--text-muted);">
+      <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" (click)="filterByCat('ASSURANCE')">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6;"></span>
+        <span>Assurances ({{ getCategorySum('ASSURANCE') | number:'1.0-0' }} MAD / {{ getCategoryPercentage('ASSURANCE') }}%)</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" (click)="filterByCat('VIDANGE')">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #a855f7;"></span>
+        <span>Vidanges ({{ getCategorySum('VIDANGE') | number:'1.0-0' }} MAD / {{ getCategoryPercentage('VIDANGE') }}%)</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" (click)="filterByCat('VISITE_TECHNIQUE')">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></span>
+        <span>Visites Tech ({{ getCategorySum('VISITE_TECHNIQUE') | number:'1.0-0' }} MAD / {{ getCategoryPercentage('VISITE_TECHNIQUE') }}%)</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" (click)="filterByCat('PNEUS_REPARATIONS')">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #f43f5e;"></span>
+        <span>Pneus & Rép. ({{ getCategorySum('PNEUS_REPARATIONS') | number:'1.0-0' }} MAD)</span>
+      </div>
     </div>
   </div>
 
-  <div class="glass-panel main-table-panel" style="padding: 24px;">
+  <!-- Detailed Table with Filter Tabs & Actions -->
+  <div class="glass-panel main-table-panel" style="padding: 24px; border-radius: 14px;">
+    
+    <!-- Filter Tabs Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-list-check" style="color: #34d399;"></i> Registre Détaillé des Dépenses Flotte
+      </h3>
+
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.8rem;">
+        <button 
+          class="btn btn-sm"
+          [style.background]="selectedCategoryFilter === 'ALL' ? '#3b82f6' : 'rgba(255,255,255,0.06)'"
+          [style.color]="selectedCategoryFilter === 'ALL' ? 'white' : 'var(--text-muted)'"
+          style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 4px 12px; cursor: pointer; font-weight: 600;"
+          (click)="filterByCat('ALL')">
+          Tous ({{ expenses.length }})
+        </button>
+
+        <button 
+          class="btn btn-sm"
+          [style.background]="selectedCategoryFilter === 'ASSURANCE' ? '#3b82f6' : 'rgba(255,255,255,0.06)'"
+          [style.color]="selectedCategoryFilter === 'ASSURANCE' ? 'white' : 'var(--text-muted)'"
+          style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 4px 12px; cursor: pointer; font-weight: 600;"
+          (click)="filterByCat('ASSURANCE')">
+          Assurance ({{ getCategoryCount('ASSURANCE') }})
+        </button>
+
+        <button 
+          class="btn btn-sm"
+          [style.background]="selectedCategoryFilter === 'VIDANGE' ? '#a855f7' : 'rgba(255,255,255,0.06)'"
+          [style.color]="selectedCategoryFilter === 'VIDANGE' ? 'white' : 'var(--text-muted)'"
+          style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 4px 12px; cursor: pointer; font-weight: 600;"
+          (click)="filterByCat('VIDANGE')">
+          Vidange ({{ getCategoryCount('VIDANGE') }})
+        </button>
+
+        <button 
+          class="btn btn-sm"
+          [style.background]="selectedCategoryFilter === 'VISITE_TECHNIQUE' ? '#10b981' : 'rgba(255,255,255,0.06)'"
+          [style.color]="selectedCategoryFilter === 'VISITE_TECHNIQUE' ? 'white' : 'var(--text-muted)'"
+          style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 4px 12px; cursor: pointer; font-weight: 600;"
+          (click)="filterByCat('VISITE_TECHNIQUE')">
+          Visite Tech ({{ getCategoryCount('VISITE_TECHNIQUE') }})
+        </button>
+      </div>
+    </div>
+
     <div class="custom-table-container">
       <table class="custom-table">
         <thead>
@@ -42,7 +216,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let e of expenses">
+          <tr *ngFor="let e of filteredExpenses">
             <!-- Véhicule -->
             <td style="font-weight: 700; color: #60a5fa;">{{ e.vehicleName }}</td>
 

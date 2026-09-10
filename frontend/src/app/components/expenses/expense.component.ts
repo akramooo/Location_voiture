@@ -13,46 +13,9 @@ import { VehicleExpense, Vehicle } from '../../models/models';
   styleUrls: ['./expense.component.css']
 })
 export class ExpenseComponent implements OnInit {
-  expenses: VehicleExpense[] = [
-    {
-      id: 1,
-      vehicleId: 1,
-      vehicleName: 'Peugeot 208 (AB-123-CD)',
-      vehicleStatus: 'DISPONIBLE',
-      category: 'ASSURANCE',
-      amount: 680,
-      expenseDate: '2026-08-20',
-      providerName: 'AXA Assurances',
-      notes: 'Prime d\'assurance annuelle flotte tous risques',
-      status: 'VALIDE'
-    },
-    {
-      id: 2,
-      vehicleId: 2,
-      vehicleName: 'Renault Clio 5 (EF-456-GH)',
-      vehicleStatus: 'EN_MAINTENANCE',
-      category: 'VISITE_TECHNIQUE',
-      amount: 85,
-      expenseDate: '2026-08-15',
-      providerName: 'Autovision Contrôle',
-      notes: 'Contrôle technique périodique obligatoire',
-      status: 'EN_ATTENTE'
-    },
-    {
-      id: 3,
-      vehicleId: 4,
-      vehicleName: 'Volkswagen Golf 8 (JK-789-LM)',
-      vehicleStatus: 'DISPONIBLE',
-      category: 'VIDANGE',
-      amount: 220,
-      expenseDate: '2026-08-24',
-      providerName: 'Norauto Paris',
-      notes: 'Huile 5W30 synthétique LongLife + Filtres et plaquettes',
-      status: 'VALIDE'
-    }
-  ];
-
+  expenses: VehicleExpense[] = [];
   vehicles: Vehicle[] = [];
+  isLoading = false;
   isModalOpen = false;
   isStatusModalOpen = false;
   selectedExpenseForStatus: VehicleExpense | null = null;
@@ -110,11 +73,16 @@ export class ExpenseComponent implements OnInit {
   }
 
   loadExpenses(): void {
+    this.isLoading = true;
     this.apiService.get<VehicleExpense[]>('/fleet/expenses').subscribe({
       next: (data) => {
-        if (data && data.length > 0) this.expenses = data;
+        this.expenses = data || [];
+        this.isLoading = false;
       },
-      error: () => {}
+      error: (err) => {
+        this.isLoading = false;
+        console.error('Erreur chargement dépenses:', err);
+      }
     });
   }
 
@@ -150,20 +118,8 @@ export class ExpenseComponent implements OnInit {
         this.closeModal();
         this.toastService.success(`Dépense de ${created.amount} MAD enregistrée avec succès !`, 'Dépense Enregistrée');
       },
-      error: () => {
-        const selectedVeh = this.vehicles.find(v => v.id == this.newExpense.vehicleId);
-        const expToAdd: VehicleExpense = {
-          ...this.newExpense,
-          id: Date.now(),
-          vehicleName: selectedVeh ? `${selectedVeh.brand} ${selectedVeh.model} (${selectedVeh.registrationNumber})` : 'Véhicule',
-          vehicleStatus: payload.setVehicleInMaintenance ? 'EN_MAINTENANCE' : (selectedVeh?.status || 'DISPONIBLE')
-        };
-        if (payload.setVehicleInMaintenance && selectedVeh) {
-          selectedVeh.status = 'EN_MAINTENANCE';
-        }
-        this.expenses.unshift(expToAdd);
-        this.closeModal();
-        this.toastService.success(`Dépense de ${expToAdd.amount} MAD enregistrée !`, 'Dépense Enregistrée');
+      error: (err) => {
+        this.toastService.error(err?.error?.message || 'Erreur lors de l\'enregistrement de la dépense.', 'Erreur');
       }
     });
   }
@@ -176,8 +132,7 @@ export class ExpenseComponent implements OnInit {
         this.toastService.success(`Dépense #${expense.id} validée et enregistrée !`, 'Statut Validé');
       },
       error: () => {
-        expense.status = 'VALIDE';
-        this.toastService.success(`Dépense #${expense.id} validée !`, 'Statut Validé');
+        this.toastService.error('Erreur lors de la validation.', 'Erreur');
       }
     });
   }
@@ -230,6 +185,56 @@ export class ExpenseComponent implements OnInit {
     } else {
       this.expenses = this.expenses.filter(e => e !== expense);
     }
+  }
+
+  selectedCategoryFilter: string = 'ALL';
+
+  filterByCat(cat: string): void {
+    this.selectedCategoryFilter = cat;
+  }
+
+  get filteredExpenses(): VehicleExpense[] {
+    if (this.selectedCategoryFilter === 'ALL') {
+      return this.expenses;
+    }
+    if (this.selectedCategoryFilter === 'PNEUS_REPARATIONS') {
+      return this.expenses.filter(e => e.category === 'PNEUMATIQUES' || e.category === 'REPARATION' || e.category === 'CARROSSERIE');
+    }
+    return this.expenses.filter(e => e.category === this.selectedCategoryFilter);
+  }
+
+  getCategorySum(cat: string): number {
+    if (cat === 'ALL') {
+      return this.getTotalExpenses();
+    }
+    if (cat === 'PNEUS_REPARATIONS') {
+      return this.expenses
+        .filter(e => e.category === 'PNEUMATIQUES' || e.category === 'REPARATION' || e.category === 'CARROSSERIE')
+        .reduce((sum, e) => sum + e.amount, 0);
+    }
+    return this.expenses
+      .filter(e => e.category === cat)
+      .reduce((sum, e) => sum + e.amount, 0);
+  }
+
+  getCategoryCount(cat: string): number {
+    if (cat === 'ALL') return this.expenses.length;
+    if (cat === 'PNEUS_REPARATIONS') {
+      return this.expenses.filter(e => e.category === 'PNEUMATIQUES' || e.category === 'REPARATION' || e.category === 'CARROSSERIE').length;
+    }
+    return this.expenses.filter(e => e.category === cat).length;
+  }
+
+  getCategoryPercentage(cat: string): number {
+    const total = this.getTotalExpenses();
+    if (total === 0) return 0;
+    const sum = this.getCategorySum(cat);
+    return Math.round((sum / total) * 1000) / 10;
+  }
+
+  getAverageCostPerVehicle(): number {
+    const vehCount = this.vehicles.length > 0 ? this.vehicles.length : 4;
+    return this.getTotalExpenses() / vehCount;
   }
 
   getTotalExpenses(): number {
