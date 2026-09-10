@@ -38,10 +38,30 @@
         </div>
 
         <div *ngIf="previewUrl">
-          <img [src]="previewUrl" style="max-height: 200px; max-width: 100%; border-radius: 8px; border: 1px solid var(--bg-card-border); object-fit: contain;" alt="Preview">
-          <div style="margin-top: 14px; display: flex; justify-content: center; gap: 10px;">
-            <button class="btn btn-secondary btn-sm" (click)="fileInput.click()"><i class="fa-solid fa-rotate"></i> Changer d'image</button>
-            <button class="btn btn-primary btn-sm" [disabled]="isScanning" (click)="startScan()"><i class="fa-solid fa-play"></i> Re-scanner</button>
+          <div style="position: relative; display: inline-block;">
+            <img [src]="previewUrl" style="max-height: 220px; max-width: 100%; border-radius: 8px; border: 1px solid var(--bg-card-border); object-fit: contain; box-shadow: 0 4px 12px rgba(0,0,0,0.4);" alt="Preview">
+            <span *ngIf="currentRotation !== 0" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.75); color: #60a5fa; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(96,165,250,0.4);">
+              {{ currentRotation }}°
+            </span>
+          </div>
+
+          <div style="margin-top: 14px; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" [disabled]="isScanning" (click)="rotateImage(-90)" title="Faire pivoter de 90° vers la gauche">
+              <i class="fa-solid fa-arrow-rotate-left"></i> -90°
+            </button>
+            <button class="btn btn-secondary btn-sm" [disabled]="isScanning" (click)="rotateImage(90)" title="Faire pivoter de 90° vers la droite">
+              <i class="fa-solid fa-arrow-rotate-right"></i> +90°
+            </button>
+            <button class="btn btn-secondary btn-sm" [disabled]="isScanning" (click)="fileInput.click()">
+              <i class="fa-solid fa-image"></i> Changer
+            </button>
+            <button class="btn btn-primary btn-sm" [disabled]="isScanning" (click)="startScan(false)">
+              <i class="fa-solid fa-play"></i> Re-scanner
+            </button>
+          </div>
+
+          <div style="margin-top: 10px; font-size: 0.78rem; color: var(--text-muted);">
+            <i class="fa-solid fa-circle-info" style="color: #60a5fa;"></i> Le document doit être orienté horizontalement pour une détection optimale.
           </div>
         </div>
       </div>

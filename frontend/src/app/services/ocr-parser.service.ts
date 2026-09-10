@@ -52,60 +52,89 @@ export class OcrParserService {
     result.nationality = 'Marocaine';
 
     // 1. Détection Zone MRZ (Verso CIN OACI)
-    const mrzLines = lines.filter(l => l.startsWith('I<MAR') || l.startsWith('IDMAR') || l.includes('<<'));
+    const mrzLines = lines.filter(l => l.startsWith('I<MAR') || l.startsWith('IDMAR') || l.includes('<<') || l.includes('I<'));
     if (mrzLines.length >= 1) {
       this.parseMrzCin(mrzLines, result);
     }
 
-    // 2. Détection Numéro CIN (Ex: AB123456, BE998877, BK765432, D123456)
+    // 2. Détection Numéro CIN (Ex: AB123456, BE998877, BK765432, D123456, EE12345)
     if (!result.cinPassport) {
-      // Regex CIN Maroc : 1 ou 2 lettres majuscules suivies de 4 à 7 chiffres
-      const cinRegex = /\b([A-Z]{1,2})\s*([0-9]{4,7})\b/i;
+      // Regex CIN Maroc : 1 ou 2 lettres majuscules suivies de 3 à 7 chiffres
+      // Supporte les espaces, points ou tirets intercalés par l'OCR
+      const cinRegex = /\b([A-Z]{1,2})\s*[\.\-_]?\s*([0-9OIlS]{3,7})\b/i;
       
-      // Chercher d'abord sur les lignes contenant "CIN", "N°", "CARTE", "ROYAUME"
+      // Chercher d'abord sur les lignes
       for (const line of lines) {
-        const cleaned = line.replace(/[\.:;\-_]/g, ' ').toUpperCase();
+        // Ignorer les mots-clés comme MAROC, CARTE, etc.
+        const cleaned = line.replace(/ROYAUME|MAROC|CARTE|NATIONALE|IDENTITE/gi, '').trim();
         const match = cleaned.match(cinRegex);
         if (match) {
-          const formattedCin = (match[1] + match[2]).toUpperCase();
-          // Éviter les faux positifs (comme les années 1999, 2024, etc.)
-          if (!/^(19|20)\d{2}$/.test(match[2])) {
-            result.cinPassport = formattedCin;
+          const prefix = match[1].toUpperCase();
+          // Correction des erreurs fréquentes OCR dans les chiffres (O->0, I/l->1, S->5)
+          const digits = match[2]
+            .replace(/[Oo]/g, '0')
+            .replace(/[Il|]/g, '1')
+            .replace(/[Ss]/g, '5');
+
+          if (/^\d{3,7}$/.test(digits) && !/^(19|20)\d{2}$/.test(digits)) {
+            result.cinPassport = `${prefix}${digits}`;
             break;
           }
         }
       }
 
-      // Si pas trouvé, balayer tout le texte brut
+      // Si pas encore trouvé, scanner l'ensemble du texte brut
       if (!result.cinPassport) {
-        const fullMatch = rawText.match(/\b([A-Z]{1,2})[ -]?([0-9]{4,7})\b/);
-        if (fullMatch) {
-          result.cinPassport = (fullMatch[1] + fullMatch[2]).toUpperCase();
+        const matches = rawText.matchAll(/\b([A-Z]{1,2})[\s\.\-_]?([0-9OIlS]{3,7})\b/gi);
+        for (const m of matches) {
+          const prefix = m[1].toUpperCase();
+          const digits = m[2]
+            .replace(/[Oo]/g, '0')
+            .replace(/[Il|]/g, '1')
+            .replace(/[Ss]/g, '5');
+          if (/^\d{3,7}$/.test(digits) && !/^(19|20)\d{2}$/.test(digits)) {
+            result.cinPassport = `${prefix}${digits}`;
+            break;
+          }
         }
       }
     }
 
     // 3. Détection Date d'expiration & Date de naissance
+    // Détection spécifique pour "VALABLE JUSQU'AU" ou "VALABLE AU"
+    const expiryMatch = rawText.match(/VALABLE\s+(?:JUSQU\s*[\'’]?\s*AU|AU)?\s*[:\.]?\s*([0-3]?[0-9][\.\/\-][0-1]?[0-9][\.\/\-](?:19|20)\d{2})/i);
+    if (expiryMatch) {
+      result.expiryDate = this.normalizeDate(expiryMatch[1]);
+    }
+
+    // Détection spécifique pour "NÉ LE" ou "NE LE"
+    const birthMatch = rawText.match(/N[ÉE]\s*(?:LE)?\s*[:\.]?\s*([0-3]?[0-9][\.\/\-][0-1]?[0-9][\.\/\-](?:19|20)\d{2})/i);
+    if (birthMatch) {
+      result.birthDate = this.normalizeDate(birthMatch[1]);
+    }
+
+    // Fallback extraction de toutes les dates
     const dates = this.extractDates(rawText);
     if (dates.length > 0) {
-      // Trier les dates : la plus récente dans le futur est généralement l'expiration
       const today = new Date().toISOString().split('T')[0];
       const futureDates = dates.filter(d => d >= today);
       const pastDates = dates.filter(d => d < today);
 
-      if (futureDates.length > 0) {
-        result.expiryDate = futureDates[0];
-      } else if (dates.length >= 1) {
-        result.expiryDate = dates[dates.length - 1];
+      if (!result.expiryDate) {
+        if (futureDates.length > 0) {
+          result.expiryDate = futureDates[0];
+        } else if (dates.length >= 1) {
+          result.expiryDate = dates[dates.length - 1];
+        }
       }
 
-      if (pastDates.length > 0) {
+      if (!result.birthDate && pastDates.length > 0) {
         result.birthDate = pastDates[0];
       }
     }
 
-    // 4. Détection Nom et Prénom
-    this.extractNameFromLabels(lines, result);
+    // 4. Détection Nom et Prénom spécialisée CIN Maroc
+    this.extractCinNames(lines, rawText, result);
   }
 
   // ==========================================
@@ -229,6 +258,70 @@ export class OcrParserService {
   }
 
   // ==========================================
+  // EXTRACTION DYNAMIQUE DES NOMS (100% DIRECTEMENT DE LA CARTE)
+  // ==========================================
+  private extractCinNames(lines: string[], rawText: string, result: OcrScanResult): void {
+    if (result.firstName && result.lastName) return;
+
+    // Mots officiels imprimés sur toutes les cartes et bruits OCR à ignorer
+    const IGNORED_TERMS = new Set([
+      'ROYAUME', 'DU', 'MAROC', 'CARTE', 'NATIONALE', 'IDENTITE', 'DIDENTITE', 'D\'IDENTITE',
+      'PERMIS', 'DE', 'CONDUIRE', 'MINISTERE', 'DIRECTION', 'GENERALE', 'SURETE',
+      'VALABLE', 'JUSQU', 'JUSQUAU', 'JUSQU\'AU', 'AU', 'EXPIRATION', 'NE', 'NÉ', 'LE',
+      'NEE', 'NÉE', 'A', 'À', 'AU', 'AUX', 'DES', 'ET', 'FILS', 'FILLE', 'CAN', 'CNIE', 'CIN',
+      'SIGNATURE', 'TITULAIRE', 'AUTORITE', 'DIRECTEUR', 'GENERAL', 'AMN', 'WATANI', 'MAMLAKA',
+      'MAGHRIBIYA', 'BATAQA', 'WATANIYA', 'TAARIF', 'LENOVO', 'HP', 'DELL', 'SAMSUNG', 'APPLE',
+      'VILLE', 'COMMUNE', 'PROVINCE', 'DATE', 'LIEU', 'NAISSANCE', 'MALL', 'AGILA', 'CAY'
+    ]);
+
+    // 1. Parcourir les lignes lues par l'OCR sur la carte
+    const detectedNameLines: string[] = [];
+
+    for (const rawLine of lines) {
+      const upperLine = rawLine.toUpperCase().trim();
+
+      // Ignorer les lignes d'en-tête, de date de naissance, de validité ou du N° CIN
+      if (
+        /ROYAUME|CARTE NATIONALE|VALABLE|N[ÉE]\s+LE|CAN\s*\d|N°\s*[A-Z]/.test(upperLine) ||
+        /\d{2}[\.\/\-]\d{2}[\.\/\-]\d{4}/.test(upperLine)
+      ) {
+        continue;
+      }
+
+      // Nettoyer la ligne pour ne garder que les lettres latines lues sur la carte
+      const cleanLine = rawLine.replace(/[^A-Za-zÀ-ÿ\s\-']/g, '').trim();
+      const upperClean = cleanLine.toUpperCase();
+
+      // Les vrais noms sur la carte sont en MAJUSCULES (au moins 2 lettres) et ne sont pas des mots de l'en-tête
+      const isPureUppercase = cleanLine.length >= 2 && cleanLine === cleanLine.toUpperCase();
+
+      if (isPureUppercase && !IGNORED_TERMS.has(upperClean) && !result.cinPassport?.includes(upperClean)) {
+        detectedNameLines.push(cleanLine);
+      }
+    }
+
+    // 2. Affectation directe des données réelles lues sur la carte :
+    // Sur la carte marocaine : 1ère ligne lue = Prénom, 2ème ligne lue = Nom de famille
+    if (detectedNameLines.length >= 2) {
+      result.firstName = this.capitalizeWords(detectedNameLines[0]);
+      result.lastName = this.capitalizeWords(detectedNameLines[1]);
+    } else if (detectedNameLines.length === 1) {
+      const singleLineWords = detectedNameLines[0].split(/\s+/).filter(w => w.length >= 2);
+      if (singleLineWords.length >= 2) {
+        result.firstName = this.capitalizeWords(singleLineWords[0]);
+        result.lastName = this.capitalizeWords(singleLineWords.slice(1).join(' '));
+      } else {
+        result.firstName = this.capitalizeWords(detectedNameLines[0]);
+      }
+    }
+
+    // Fallback labels si non trouvé
+    if (!result.firstName || !result.lastName) {
+      this.extractNameFromLabels(lines, result);
+    }
+  }
+
+  // ==========================================
   // UTILITAIRES D'EXTRACTION DE MOTIFS
   // ==========================================
 
@@ -292,20 +385,6 @@ export class OcrParserService {
         }
       }
     }
-
-    // Heuristique de secours si pas de labels : chercher des lignes avec 2 mots en majuscules (hors en-têtes)
-    if (!result.lastName || !result.firstName) {
-      const ignoreWords = ['ROYAUME', 'MAROC', 'CARTE', 'NATIONALE', 'IDENTITE', 'PERMIS', 'CONDUIRE', 'MINISTERE', 'DIRECTION'];
-      for (const line of lines) {
-        const cleanWords = line.split(/\s+/).filter(w => w.length > 2 && /^[A-Za-zÀ-ÿ]+$/.test(w));
-        const filtered = cleanWords.filter(w => !ignoreWords.includes(w.toUpperCase()));
-        if (filtered.length >= 2 && !result.lastName && !result.firstName) {
-          result.lastName = this.capitalizeWords(filtered[0]);
-          result.firstName = this.capitalizeWords(filtered.slice(1).join(' '));
-          break;
-        }
-      }
-    }
   }
 
   /**
@@ -326,6 +405,18 @@ export class OcrParserService {
     if (cinMatch) {
       result.cinPassport = cinMatch[1].replace(/</g, '').trim();
     }
+  }
+
+  private normalizeDate(dateStr: string): string {
+    const clean = dateStr.replace(/[\.\/\-]/g, '-');
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2];
+      return `${year}-${month}-${day}`;
+    }
+    return dateStr;
   }
 
   private capitalizeWords(str: string): string {

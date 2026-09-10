@@ -22,7 +22,9 @@ export class OcrScannerComponent implements OnDestroy {
   statusMessage = '';
   scanResult: OcrScanResult | null = null;
   previewUrl: string | null = null;
+  rawImageBase64: string | null = null;
   selectedFile: File | null = null;
+  currentRotation = 0; // 0, 90, 180, 270
   showRawOutput = false;
 
   private activeWorker: Worker | null = null;
@@ -40,7 +42,7 @@ export class OcrScannerComponent implements OnDestroy {
 
   onDocTypeChange(): void {
     if (this.previewUrl && !this.isScanning) {
-      this.startScan();
+      this.startScan(false);
     }
   }
 
@@ -48,17 +50,54 @@ export class OcrScannerComponent implements OnDestroy {
     const file = event.target.files[0];
     if (file) {
       this.selectedFile = file;
+      this.currentRotation = 0;
       const reader = new FileReader();
       reader.onload = (e: any) => {
+        this.rawImageBase64 = e.target.result;
         this.previewUrl = e.target.result;
-        this.startScan();
+        this.startScan(true);
       };
       reader.readAsDataURL(file);
     }
   }
 
-  async startScan(): Promise<void> {
-    if (!this.previewUrl && !this.selectedFile) return;
+  async rotateImage(deltaAngle: number): Promise<void> {
+    if (!this.rawImageBase64) return;
+    this.currentRotation = (this.currentRotation + deltaAngle + 360) % 360;
+    this.previewUrl = await this.renderRotatedImage(this.rawImageBase64, this.currentRotation);
+    await this.startScan(false);
+  }
+
+  private renderRotatedImage(base64: string, angle: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(base64);
+          return;
+        }
+
+        const normalizedAngle = (angle % 360 + 360) % 360;
+        const isOrthogonal = normalizedAngle === 90 || normalizedAngle === 270;
+
+        canvas.width = isOrthogonal ? img.height : img.width;
+        canvas.height = isOrthogonal ? img.width : img.height;
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((normalizedAngle * Math.PI) / 180);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+        resolve(canvas.toDataURL('image/jpeg', 0.95));
+      };
+      img.onerror = (err) => reject(err);
+      img.src = base64;
+    });
+  }
+
+  async startScan(allowAutoRotate: boolean = true): Promise<void> {
+    if (!this.previewUrl) return;
 
     this.isScanning = true;
     this.scanProgress = 5;
@@ -68,15 +107,14 @@ export class OcrScannerComponent implements OnDestroy {
     try {
       await this.terminateActiveWorker();
 
-      this.statusMessage = 'Chargement des dictionnaires linguistiques...';
+      this.statusMessage = 'Chargement des modèles linguistiques...';
       this.scanProgress = 15;
 
-      // Création du worker Tesseract multilingue (français + anglais / chiffres)
       const worker = await createWorker('fra+eng', 1, {
         logger: (m) => {
           if (m.status === 'recognizing text') {
             const pct = Math.round(m.progress * 100);
-            this.scanProgress = Math.min(20 + Math.round(pct * 0.75), 95);
+            this.scanProgress = Math.min(20 + Math.round(pct * 0.7), 90);
             this.statusMessage = `Analyse optique des caractères (${this.scanProgress}%)...`;
           } else if (m.status === 'loading tesseract core') {
             this.scanProgress = 10;
@@ -90,27 +128,51 @@ export class OcrScannerComponent implements OnDestroy {
 
       this.activeWorker = worker;
 
-      const imageSource = this.selectedFile || this.previewUrl;
-      const ret = await worker.recognize(imageSource as any);
-      
-      this.scanProgress = 98;
-      this.statusMessage = 'Extraction et structuration des données marocaines...';
+      // 1. Analyse avec l'orientation actuelle
+      let currentImg = this.previewUrl;
+      let ret = await worker.recognize(currentImg);
+      let rawText = ret.data.text || '';
+      let confidence = ret.data.confidence || 0;
+      let parsed = this.ocrParser.parseDocument(rawText, this.selectedDocType, confidence);
 
-      const rawText = ret.data.text || '';
-      const confidence = ret.data.confidence || 0;
+      // 2. Détection d'orientation intelligente si les données clés sont introuvables
+      const missingKeyData = !parsed.cinPassport && !parsed.lastName && !parsed.licensePlate;
+      if (allowAutoRotate && (missingKeyData || parsed.rawConfidence < 50) && this.rawImageBase64) {
+        const testOffsets = [90, 270, 180];
+        for (const offset of testOffsets) {
+          const testAngle = (this.currentRotation + offset) % 360;
+          this.statusMessage = `Orientation testée (${testAngle}°)...`;
+          const rotatedData = await this.renderRotatedImage(this.rawImageBase64, testAngle);
+          const testRet = await worker.recognize(rotatedData);
+          const testText = testRet.data.text || '';
+          const testConf = testRet.data.confidence || 0;
+          const testParsed = this.ocrParser.parseDocument(testText, this.selectedDocType, testConf);
 
-      // Parsing intelligent selon le type de document marocain
-      const parsed = this.ocrParser.parseDocument(rawText, this.selectedDocType, confidence);
+          if (testParsed.cinPassport || testParsed.lastName || testParsed.licensePlate || testConf > confidence + 15) {
+            parsed = testParsed;
+            this.currentRotation = testAngle;
+            this.previewUrl = rotatedData;
+            break;
+          }
+        }
+      }
 
       this.scanResult = parsed;
       this.scanProgress = 100;
       this.isScanning = false;
 
       const confDisplay = parsed.rawConfidence > 0 ? `${parsed.rawConfidence}%` : 'Terminé';
-      this.toastService.success(
-        `Document scanné avec succès (${confDisplay} de précision optique)`,
-        'OCR Exécuté'
-      );
+      if (parsed.cinPassport || parsed.firstName || parsed.lastName || parsed.licensePlate) {
+        this.toastService.success(
+          `Document scanné avec succès (${confDisplay} de précision optique)`,
+          'OCR Réussi'
+        );
+      } else {
+        this.toastService.info(
+          'Document analysé. Si le document était pivoté, utilisez les boutons ↺ / ↻ pour le remettre à l\'horizontale.',
+          'Astuce Document'
+        );
+      }
 
       await this.terminateActiveWorker();
 
