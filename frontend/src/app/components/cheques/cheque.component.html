@@ -167,7 +167,7 @@
               </span>
             </td>
             <td>
-              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
                 <!-- En Caisse -> Déposer en banque ou Restituer -->
                 <button *ngIf="c.status === 'EN_CAISSE'" class="btn btn-secondary btn-xs" (click)="updateStatus(c, 'DEPOSE_BANQUE')" title="Remettre à la banque">
                   <i class="fa-solid fa-building-columns"></i> Déposer
@@ -176,15 +176,25 @@
                   <i class="fa-solid fa-hand-holding-dollar"></i> Restituer
                 </button>
 
-                <!-- Déposé en banque -> Encaissé ou Rejet -->
+                <!-- Déposé en banque -> Encaisser ou Rejet -->
                 <button *ngIf="c.status === 'DEPOSE_BANQUE'" class="btn btn-secondary btn-xs" style="color: #34d399;" (click)="updateStatus(c, 'ENCAISSE')" title="Valider l'encaissement">
                   <i class="fa-solid fa-circle-check"></i> Encaisser
                 </button>
 
-                <!-- Rejet si pas déjà rejeté -->
-                <button *ngIf="c.status !== 'IMPAYE_REJET' && c.status !== 'RESTITUE'" class="btn btn-danger btn-xs" (click)="updateStatus(c, 'IMPAYE_REJET')" title="Déclarer impayé / sans provision">
+                <!-- Rejet disponible uniquement quand le chèque est En Caisse ou Déposé en banque (masqué une fois Encaissé ou Restitué) -->
+                <button *ngIf="c.status === 'EN_CAISSE' || c.status === 'DEPOSE_BANQUE'" class="btn btn-danger btn-xs" (click)="updateStatus(c, 'IMPAYE_REJET')" title="Déclarer impayé / rejet bancaire">
                   <i class="fa-solid fa-ban"></i> Rejet
                 </button>
+
+                <!-- Chèque déjà Encaissé : indicateur -->
+                <span *ngIf="c.status === 'ENCAISSE'" style="color: #34d399; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px;">
+                  <i class="fa-solid fa-circle-check"></i> Règlement validé
+                </span>
+
+                <!-- Chèque Restitué : indicateur -->
+                <span *ngIf="c.status === 'RESTITUE'" style="color: #94a3b8; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px;">
+                  <i class="fa-solid fa-arrow-rotate-left"></i> Restitution terminée
+                </span>
 
                 <!-- Supprimer -->
                 <button class="btn btn-secondary btn-xs" style="color: #ef4444; opacity: 0.8;" (click)="deleteCheque(c)" title="Supprimer définitivement">
