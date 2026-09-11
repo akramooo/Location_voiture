@@ -3,15 +3,16 @@ package com.rentflow.service.impl;
 import com.rentflow.domain.VehicleStatus;
 import com.rentflow.dto.ExecutiveKpisDto;
 import com.rentflow.repository.ReservationRepository;
-import com.rentflow.repository.VehicleDocumentRepository;
 import com.rentflow.repository.VehicleRepository;
 import com.rentflow.security.TenantContext;
 import com.rentflow.service.DashboardService;
+import com.rentflow.service.VehicleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +21,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     private final VehicleRepository vehicleRepository;
     private final ReservationRepository reservationRepository;
-    private final VehicleDocumentRepository vehicleDocumentRepository;
+    private final VehicleService vehicleService;
 
     @Override
     public ExecutiveKpisDto getExecutiveKpis() {
@@ -38,7 +39,8 @@ public class DashboardServiceImpl implements DashboardService {
         if (totalRevenue == null) totalRevenue = 0.0;
 
         double revPac = totalVehicles > 0 ? totalRevenue / totalVehicles : 0.0;
-        long alertCount = vehicleDocumentRepository.findExpiringDocuments(tenantId, LocalDate.now().plusDays(30)).size();
+        List<Map<String, Object>> alerts = vehicleService.getFleetAlerts();
+        long alertCount = alerts.size();
 
         return ExecutiveKpisDto.builder()
                 .totalVehicles(totalVehicles)

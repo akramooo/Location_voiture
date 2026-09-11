@@ -126,14 +126,16 @@ public class VehicleServiceImpl implements VehicleService {
         Long tenantId = TenantContext.getCurrentTenant();
         LocalDate targetDate = LocalDate.now().plusDays(30);
 
-        List<VehicleDocument> expiringDocs = vehicleDocumentRepository.findExpiringDocuments(tenantId, targetDate);
         List<Map<String, Object>> alerts = new ArrayList<>();
 
+        // 1. Documents administratifs (Assurance, Visite Technique, Vignette)
+        List<VehicleDocument> expiringDocs = vehicleDocumentRepository.findExpiringDocuments(tenantId, targetDate);
         for (VehicleDocument doc : expiringDocs) {
             long daysRemaining = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), doc.getExpirationDate());
             Map<String, Object> alert = new HashMap<>();
             alert.put("docId", doc.getId());
             alert.put("docType", doc.getDocType());
+            alert.put("categoryType", "DOCUMENT");
             alert.put("expirationDate", doc.getExpirationDate());
             alert.put("daysRemaining", daysRemaining);
             alert.put("providerName", doc.getProviderName() != null ? doc.getProviderName() : "");
@@ -143,7 +145,73 @@ public class VehicleServiceImpl implements VehicleService {
             alerts.add(alert);
         }
 
-        alerts.sort(Comparator.comparingLong(a -> (Long) a.get("daysRemaining")));
+        // 2. Vidanges & Entretiens Mécaniques Périodiques
+        List<Vehicle> vehicles = vehicleRepository.findByTenantId(tenantId);
+        for (Vehicle v : vehicles) {
+            List<MaintenanceLog> logs = maintenanceLogRepository.findByVehicleIdOrderByServiceDateDesc(v.getId());
+            double currentKm = (v.getCurrentMileage() != null) ? v.getCurrentMileage() : 0.0;
+
+            Optional<MaintenanceLog> vidangeOpt = logs.stream()
+                    .filter(l -> "VIDANGE".equalsIgnoreCase(l.getServiceType()))
+                    .findFirst();
+
+            if (vidangeOpt.isPresent()) {
+                MaintenanceLog lastVidange = vidangeOpt.get();
+                double targetMileage = lastVidange.getNextServiceMileage() != null
+                        ? lastVidange.getNextServiceMileage()
+                        : ((lastVidange.getMileageAtService() != null ? lastVidange.getMileageAtService() : currentKm) + 10000.0);
+
+                double kmRemaining = targetMileage - currentKm;
+                LocalDate nextDate = lastVidange.getNextServiceDate() != null
+                        ? lastVidange.getNextServiceDate()
+                        : (lastVidange.getServiceDate() != null ? lastVidange.getServiceDate().plusYears(1) : LocalDate.now().plusYears(1));
+                long daysRemaining = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), nextDate);
+
+                // Remonter l'alerte si : vidange en cours/planifiée, ou reste <= 2000 KM, ou date <= 30 jours, ou vidange effectuée récemment pour suivi
+                boolean isUrgent = kmRemaining <= 1500 || daysRemaining <= 30 || "EN_COURS".equals(lastVidange.getStatus()) || "PLANIFIE".equals(lastVidange.getStatus());
+
+                Map<String, Object> alert = new HashMap<>();
+                alert.put("docId", lastVidange.getId());
+                alert.put("docType", "VIDANGE");
+                alert.put("categoryType", "MAINTENANCE");
+                alert.put("expirationDate", nextDate);
+                alert.put("daysRemaining", daysRemaining);
+                alert.put("currentMileage", currentKm);
+                alert.put("nextServiceMileage", targetMileage);
+                alert.put("kmRemaining", Math.round(kmRemaining));
+                alert.put("isUrgent", isUrgent);
+                alert.put("serviceStatus", lastVidange.getStatus() != null ? lastVidange.getStatus() : "VALIDE");
+                alert.put("providerName", lastVidange.getGarageName() != null ? lastVidange.getGarageName() : "Atelier Vidange");
+                alert.put("vehicleId", v.getId());
+                alert.put("registrationNumber", v.getRegistrationNumber());
+                alert.put("vehicleName", v.getBrand() + " " + v.getModel());
+                alerts.add(alert);
+            } else if (currentKm >= 10000.0) {
+                // Aucun historique de vidange enregistré pour un véhicule avec kilométrage conséquent
+                Map<String, Object> alert = new HashMap<>();
+                alert.put("docId", v.getId());
+                alert.put("docType", "VIDANGE");
+                alert.put("categoryType", "MAINTENANCE");
+                alert.put("expirationDate", LocalDate.now());
+                alert.put("daysRemaining", 0L);
+                alert.put("currentMileage", currentKm);
+                alert.put("nextServiceMileage", currentKm);
+                alert.put("kmRemaining", 0.0);
+                alert.put("isUrgent", true);
+                alert.put("serviceStatus", "NON_RENSEIGNE");
+                alert.put("providerName", "À planifier");
+                alert.put("vehicleId", v.getId());
+                alert.put("registrationNumber", v.getRegistrationNumber());
+                alert.put("vehicleName", v.getBrand() + " " + v.getModel());
+                alerts.add(alert);
+            }
+        }
+
+        alerts.sort((a, b) -> {
+            Long d1 = a.get("daysRemaining") != null ? (Long) a.get("daysRemaining") : 999L;
+            Long d2 = b.get("daysRemaining") != null ? (Long) b.get("daysRemaining") : 999L;
+            return d1.compareTo(d2);
+        });
         return alerts;
     }
 

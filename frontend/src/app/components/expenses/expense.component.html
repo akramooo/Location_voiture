@@ -337,6 +337,25 @@
           </div>
         </div>
 
+        <!-- Champs dynamiques spécifiques à la Vidange -->
+        <div *ngIf="newExpense.category === 'VIDANGE'" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); padding: 12px; border-radius: 8px;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label" style="color: #c084fc; font-size: 0.8rem;"><i class="fa-solid fa-gauge"></i> Kilométrage Actuel (KM)</label>
+            <input type="number" class="form-control" [(ngModel)]="newExpense.mileageAtService" (ngModelChange)="onMileageChange()" name="mileageAtService">
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label" style="color: #c084fc; font-size: 0.8rem;"><i class="fa-solid fa-oil-can"></i> Prochaine Vidange à (KM)</label>
+            <input type="number" class="form-control" [(ngModel)]="newExpense.nextServiceMileage" name="nextServiceMileage">
+          </div>
+        </div>
+
+        <!-- Champs dynamiques spécifiques aux Assurances / Visites Techniques -->
+        <div *ngIf="newExpense.category === 'ASSURANCE' || newExpense.category === 'VISITE_TECHNIQUE' || newExpense.category === 'VIGNETTE'" 
+             style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+          <label class="form-label" style="color: #93c5fd; font-size: 0.8rem;"><i class="fa-solid fa-calendar-check"></i> Date de Fin de Validité / Échéance</label>
+          <input type="date" class="form-control" [(ngModel)]="newExpense.expirationDate" name="expirationDate">
+        </div>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
             <label class="form-label">Date de la Dépense</label>

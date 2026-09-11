@@ -2,7 +2,9 @@ package com.rentflow.service.impl;
 
 import com.rentflow.domain.MaintenanceLog;
 import com.rentflow.domain.Vehicle;
+import com.rentflow.domain.VehicleDocument;
 import com.rentflow.repository.MaintenanceLogRepository;
+import com.rentflow.repository.VehicleDocumentRepository;
 import com.rentflow.repository.VehicleRepository;
 import com.rentflow.security.TenantContext;
 import com.rentflow.service.FleetExpenseService;
@@ -21,6 +23,7 @@ public class FleetExpenseServiceImpl implements FleetExpenseService {
 
     private final MaintenanceLogRepository maintenanceLogRepository;
     private final VehicleRepository vehicleRepository;
+    private final VehicleDocumentRepository vehicleDocumentRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -45,6 +48,9 @@ public class FleetExpenseServiceImpl implements FleetExpenseService {
             map.put("providerName", log.getGarageName() != null ? log.getGarageName() : "Prestataire");
             map.put("notes", log.getNotes());
             map.put("status", log.getStatus() != null ? log.getStatus() : "VALIDE");
+            map.put("mileageAtService", log.getMileageAtService());
+            map.put("nextServiceMileage", log.getNextServiceMileage());
+            map.put("nextServiceDate", log.getNextServiceDate() != null ? log.getNextServiceDate().toString() : null);
             return map;
         }).collect(Collectors.toList());
     }
@@ -62,13 +68,26 @@ public class FleetExpenseServiceImpl implements FleetExpenseService {
         }
 
         Vehicle vehicle = vehicleOpt.get();
-        String category = payload.get("category") != null ? String.valueOf(payload.get("category")) : "VIDANGE";
+        String category = payload.get("category") != null ? String.valueOf(payload.get("category")).toUpperCase() : "VIDANGE";
         Double amount = payload.get("amount") != null ? Double.valueOf(String.valueOf(payload.get("amount"))) : 0.0;
         String expenseDateStr = payload.get("expenseDate") != null ? String.valueOf(payload.get("expenseDate")) : null;
         LocalDate expenseDate = expenseDateStr != null ? LocalDate.parse(expenseDateStr) : LocalDate.now();
         String providerName = payload.get("providerName") != null ? String.valueOf(payload.get("providerName")) : "";
         String notes = payload.get("notes") != null ? String.valueOf(payload.get("notes")) : "";
         String status = payload.get("status") != null ? String.valueOf(payload.get("status")) : "VALIDE";
+
+        Double currentKm = vehicle.getCurrentMileage() != null ? vehicle.getCurrentMileage() : 0.0;
+        Double mileageAtService = payload.get("mileageAtService") != null
+                ? Double.valueOf(String.valueOf(payload.get("mileageAtService")))
+                : currentKm;
+
+        Double nextServiceMileage = payload.get("nextServiceMileage") != null
+                ? Double.valueOf(String.valueOf(payload.get("nextServiceMileage")))
+                : ("VIDANGE".equalsIgnoreCase(category) ? mileageAtService + 10000.0 : null);
+
+        LocalDate nextServiceDate = payload.get("nextServiceDate") != null
+                ? LocalDate.parse(String.valueOf(payload.get("nextServiceDate")))
+                : ("VIDANGE".equalsIgnoreCase(category) ? expenseDate.plusYears(1) : null);
 
         Boolean setMaintenance = payload.get("setVehicleInMaintenance") != null && Boolean.parseBoolean(String.valueOf(payload.get("setVehicleInMaintenance")));
         if (setMaintenance) {
@@ -81,12 +100,32 @@ public class FleetExpenseServiceImpl implements FleetExpenseService {
                 .serviceType(category)
                 .cost(amount)
                 .serviceDate(expenseDate)
+                .mileageAtService(mileageAtService)
+                .nextServiceMileage(nextServiceMileage)
+                .nextServiceDate(nextServiceDate)
                 .garageName(providerName)
                 .notes(notes)
                 .status(status)
                 .build();
 
         log = maintenanceLogRepository.save(log);
+
+        // Synchronisation automatique avec vehicle_documents pour Assurance / Visite Technique / Vignette
+        if ("ASSURANCE".equalsIgnoreCase(category) || "VISITE_TECHNIQUE".equalsIgnoreCase(category) || "VIGNETTE".equalsIgnoreCase(category)) {
+            LocalDate expDate = payload.get("expirationDate") != null
+                    ? LocalDate.parse(String.valueOf(payload.get("expirationDate")))
+                    : expenseDate.plusYears(1);
+
+            VehicleDocument doc = VehicleDocument.builder()
+                    .vehicle(vehicle)
+                    .docType(category)
+                    .expirationDate(expDate)
+                    .providerName(providerName)
+                    .cost(amount)
+                    .build();
+
+            vehicleDocumentRepository.save(doc);
+        }
 
         Map<String, Object> res = new HashMap<>();
         res.put("id", log.getId());
@@ -99,6 +138,8 @@ public class FleetExpenseServiceImpl implements FleetExpenseService {
         res.put("providerName", log.getGarageName());
         res.put("notes", log.getNotes());
         res.put("status", log.getStatus());
+        res.put("nextServiceMileage", log.getNextServiceMileage());
+        res.put("nextServiceDate", log.getNextServiceDate() != null ? log.getNextServiceDate().toString() : null);
 
         return res;
     }

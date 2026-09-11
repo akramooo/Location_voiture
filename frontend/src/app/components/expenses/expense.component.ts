@@ -21,7 +21,12 @@ export class ExpenseComponent implements OnInit {
   selectedExpenseForStatus: VehicleExpense | null = null;
   selectedNewVehicleStatus = 'DISPONIBLE';
 
-  newExpense: VehicleExpense & { setVehicleInMaintenance?: boolean } = {
+  newExpense: VehicleExpense & { 
+    setVehicleInMaintenance?: boolean;
+    mileageAtService?: number;
+    nextServiceMileage?: number;
+    expirationDate?: string;
+  } = {
     vehicleId: 1,
     category: 'VIDANGE',
     amount: 150,
@@ -29,7 +34,10 @@ export class ExpenseComponent implements OnInit {
     providerName: '',
     notes: '',
     status: 'VALIDE',
-    setVehicleInMaintenance: false
+    setVehicleInMaintenance: false,
+    mileageAtService: 15000,
+    nextServiceMileage: 25000,
+    expirationDate: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().split('T')[0]
   };
 
   categories = [
@@ -66,10 +74,25 @@ export class ExpenseComponent implements OnInit {
         this.vehicles = data;
         if (this.vehicles.length > 0) {
           this.newExpense.vehicleId = this.vehicles[0].id!;
+          this.onVehicleSelectChange();
         }
       },
       error: () => {}
     });
+  }
+
+  onVehicleSelectChange(): void {
+    const v = this.vehicles.find(veh => veh.id == this.newExpense.vehicleId);
+    if (v) {
+      this.newExpense.mileageAtService = v.currentMileage || 15000;
+      this.newExpense.nextServiceMileage = (v.currentMileage || 15000) + 10000;
+    }
+  }
+
+  onMileageChange(): void {
+    if (this.newExpense.mileageAtService) {
+      this.newExpense.nextServiceMileage = Number(this.newExpense.mileageAtService) + 10000;
+    }
   }
 
   loadExpenses(): void {
@@ -88,6 +111,8 @@ export class ExpenseComponent implements OnInit {
 
   openModal(): void {
     this.newExpense.expenseDate = new Date().toISOString().split('T')[0];
+    this.newExpense.expirationDate = new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().split('T')[0];
+    this.onVehicleSelectChange();
     this.isModalOpen = true;
   }
 

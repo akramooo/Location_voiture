@@ -85,34 +85,51 @@
       <div class="glass-panel alert-box" style="padding: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <h3 class="amber-header" style="margin: 0; display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-triangle-exclamation"></i> Échéances Réglementaires
+            <i class="fa-solid fa-triangle-exclamation"></i> Alertes & Échéances Flotte
           </h3>
           <span *ngIf="alerts.length > 0" class="badge" style="background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.35); font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 10px;">
-            {{ alerts.length }} Imminente(s)
+            {{ alerts.length }} Active(s)
           </span>
         </div>
 
-        <div class="alert-list" style="display: flex; flex-direction: column; gap: 12px;">
-          <div *ngFor="let a of alerts" class="glass-card alert-item" style="padding: 14px; border-radius: 10px; border-left: 4px solid;" [style.borderLeftColor]="a.daysRemaining <= 7 ? '#ef4444' : '#f59e0b'">
+        <div class="alert-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 420px; overflow-y: auto;">
+          <div *ngFor="let a of alerts" class="glass-card alert-item" style="padding: 14px; border-radius: 10px; border-left: 4px solid;" 
+               [style.borderLeftColor]="a.docType === 'VIDANGE' ? '#a855f7' : (a.daysRemaining <= 7 ? '#ef4444' : '#f59e0b')">
             <div class="alert-title" style="display: flex; justify-content: space-between; font-weight: 700; align-items: center;">
-              <span style="color: #f1f5f9; font-size: 0.88rem;">
-                {{ a.docType === 'ASSURANCE' ? 'Assurance' : (a.docType === 'VISITE_TECHNIQUE' ? 'Contrôle Tech' : (a.docType === 'VIGNETTE' ? 'Vignette' : a.docType)) }} - {{ a.vehicleName }}
+              <span style="color: #f1f5f9; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                <i *ngIf="a.docType === 'VIDANGE'" class="fa-solid fa-oil-can" style="color: #a855f7;"></i>
+                <i *ngIf="a.docType === 'ASSURANCE'" class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i>
+                <i *ngIf="a.docType === 'VISITE_TECHNIQUE'" class="fa-solid fa-clipboard-check" style="color: #34d399;"></i>
+                <i *ngIf="a.docType === 'VIGNETTE'" class="fa-solid fa-ticket" style="color: #fbbf24;"></i>
+                {{ a.docType === 'VIDANGE' ? 'Vidange' : (a.docType === 'ASSURANCE' ? 'Assurance' : (a.docType === 'VISITE_TECHNIQUE' ? 'Contrôle Tech' : (a.docType === 'VIGNETTE' ? 'Vignette' : a.docType))) }} - {{ a.vehicleName }}
               </span>
-              <span [style.color]="a.daysRemaining <= 7 ? '#ef4444' : '#f59e0b'" style="font-weight: 800; font-size: 0.82rem;">
+              
+              <!-- Badge pour Vidange -->
+              <span *ngIf="a.docType === 'VIDANGE'" [style.color]="a.kmRemaining <= 0 ? '#ef4444' : (a.kmRemaining <= 1500 ? '#f59e0b' : '#a855f7')" style="font-weight: 800; font-size: 0.80rem;">
+                {{ a.kmRemaining <= 0 ? 'À faire immédiatement' : (a.kmRemaining + ' KM restants') }}
+              </span>
+              <!-- Badge pour Documents administratifs -->
+              <span *ngIf="a.docType !== 'VIDANGE'" [style.color]="a.daysRemaining <= 7 ? '#ef4444' : '#f59e0b'" style="font-weight: 800; font-size: 0.82rem;">
                 {{ a.daysRemaining < 0 ? 'Expiré' : ('J-' + a.daysRemaining) }}
               </span>
             </div>
-            <div class="alert-desc" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between;">
-              <span>Expiration : {{ a.expirationDate }}</span>
-              <span *ngIf="a.providerName">({{ a.providerName }})</span>
+
+            <div class="alert-desc" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between;">
+              <span *ngIf="a.docType === 'VIDANGE'">
+                Actuel: <b>{{ a.currentMileage }} KM</b> → Prochaine: <b>{{ a.nextServiceMileage }} KM</b>
+              </span>
+              <span *ngIf="a.docType !== 'VIDANGE'">
+                Expiration : <b>{{ a.expirationDate }}</b>
+              </span>
+              <span *ngIf="a.providerName" style="color: #94a3b8;">({{ a.providerName }})</span>
             </div>
           </div>
 
           <!-- Empty State si aucune échéance imminente -->
           <div *ngIf="alerts.length === 0" style="text-align: center; padding: 24px 12px; color: var(--text-muted); font-size: 0.85rem;">
             <i class="fa-solid fa-circle-check" style="color: #34d399; font-size: 1.8rem; margin-bottom: 8px; display: block;"></i>
-            <div style="font-weight: 600; color: #cbd5e1;">Tous les documents sont à jour</div>
-            <div style="font-size: 0.75rem; margin-top: 4px; opacity: 0.8;">Aucune échéance d'assurance ou contrôle technique à moins de 30 jours.</div>
+            <div style="font-weight: 600; color: #cbd5e1;">Tous les documents & entretiens sont à jour</div>
+            <div style="font-size: 0.75rem; margin-top: 4px; opacity: 0.8;">Aucune échéance d'assurance, contrôle technique ou vidange imminente.</div>
           </div>
         </div>
       </div>
