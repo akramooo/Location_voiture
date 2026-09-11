@@ -53,4 +53,12 @@ public class ReservationController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/check-availability")
+    public ResponseEntity<Map<String, Object>> checkAvailability(
+            @RequestParam Long vehicleId,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        return ResponseEntity.ok(reservationService.checkAvailability(vehicleId, startDate, endDate));
+    }
 }

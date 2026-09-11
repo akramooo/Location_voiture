@@ -444,6 +444,7 @@
     [isOpen]="isModalOpen" 
     [initialVehicleId]="selectedVehicleId" 
     [initialStartDate]="selectedDayStr" 
+    [existingReservations]="ganttItems"
     (close)="isModalOpen = false" 
     (created)="onReservationCreated()">
   </app-reservation-modal>

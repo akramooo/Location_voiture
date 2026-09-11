@@ -10,4 +10,5 @@ public interface ReservationService {
     List<Map<String, Object>> getGanttData();
     ReservationDto createReservation(Map<String, Object> payload);
     ReservationDto updateStatus(Long id, String status);
+    Map<String, Object> checkAvailability(Long vehicleId, String startDateStr, String endDateStr);
 }

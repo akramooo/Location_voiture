@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -89,13 +90,32 @@ public class ReservationServiceImpl implements ReservationService {
             throw new IllegalArgumentException("Impossible de créer une réservation : Ce client est inscrit sur liste noire (Blacklisté).");
         }
 
+        if (vehicle.getStatus() == VehicleStatus.EN_MAINTENANCE) {
+            throw new IllegalArgumentException("Impossible de réserver ce véhicule : Il est actuellement en maintenance.");
+        }
+
+        if (vehicle.getStatus() == VehicleStatus.BLOQUE_LITIGE) {
+            throw new IllegalArgumentException("Impossible de réserver ce véhicule : Il est actuellement sous litige / bloqué.");
+        }
+
         LocalDateTime startDate = LocalDateTime.parse(payload.get("startDate").toString());
         LocalDateTime endDate = LocalDateTime.parse(payload.get("endDate").toString());
 
-        // Détection instantanée des conflits de disponibilité
+        if (!endDate.isAfter(startDate)) {
+            throw new IllegalArgumentException("La date de fin doit être postérieure à la date de début.");
+        }
+
+        // Détection instantanée et blocage des conflits de disponibilité
         List<Reservation> conflicts = reservationRepository.findConflictingReservations(tenantId, vehicleId, startDate, endDate);
         if (!conflicts.isEmpty()) {
-            throw new IllegalArgumentException("Conflit de réservation : Le véhicule est déjà réservé sur cette période.");
+            Reservation first = conflicts.get(0);
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            String clientName = first.getClient().getClientType().equals("ENTREPRISE") ? first.getClient().getCompanyName() : (first.getClient().getFirstName() + " " + first.getClient().getLastName());
+            throw new IllegalArgumentException(String.format(
+                    "Conflit de réservation : Le véhicule %s %s (%s) est déjà réservé du %s au %s par %s (Réf: %s).",
+                    vehicle.getBrand(), vehicle.getModel(), vehicle.getRegistrationNumber(),
+                    first.getStartDate().format(fmt), first.getEndDate().format(fmt), clientName, first.getReservationNumber()
+            ));
         }
 
         long days = ChronoUnit.DAYS.between(startDate.toLocalDate(), endDate.toLocalDate());
@@ -185,5 +205,56 @@ public class ReservationServiceImpl implements ReservationService {
 
         Reservation saved = reservationRepository.save(reservation);
         return reservationMapper.toDto(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> checkAvailability(Long vehicleId, String startDateStr, String endDateStr) {
+        Long tenantId = TenantContext.getCurrentTenant();
+        Optional<Vehicle> vehicleOpt = vehicleRepository.findById(vehicleId);
+
+        Map<String, Object> res = new HashMap<>();
+        if (vehicleOpt.isEmpty() || !vehicleOpt.get().getTenant().getId().equals(tenantId)) {
+            res.put("available", false);
+            res.put("reason", "Véhicule introuvable.");
+            return res;
+        }
+
+        Vehicle vehicle = vehicleOpt.get();
+        if (vehicle.getStatus() == VehicleStatus.EN_MAINTENANCE) {
+            res.put("available", false);
+            res.put("reason", "Le véhicule est actuellement immobilisé en maintenance.");
+            return res;
+        }
+        if (vehicle.getStatus() == VehicleStatus.BLOQUE_LITIGE) {
+            res.put("available", false);
+            res.put("reason", "Le véhicule est actuellement bloqué pour litige.");
+            return res;
+        }
+
+        LocalDateTime startDate = LocalDateTime.parse(startDateStr);
+        LocalDateTime endDate = LocalDateTime.parse(endDateStr);
+
+        if (!endDate.isAfter(startDate)) {
+            res.put("available", false);
+            res.put("reason", "La date de fin doit être postérieure à la date de début.");
+            return res;
+        }
+
+        List<Reservation> conflicts = reservationRepository.findConflictingReservations(tenantId, vehicleId, startDate, endDate);
+        if (!conflicts.isEmpty()) {
+            Reservation first = conflicts.get(0);
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            String clientName = first.getClient().getClientType().equals("ENTREPRISE") ? first.getClient().getCompanyName() : (first.getClient().getFirstName() + " " + first.getClient().getLastName());
+            res.put("available", false);
+            res.put("reason", String.format("Déjà réservé du %s au %s par %s (N° %s)",
+                    first.getStartDate().format(fmt), first.getEndDate().format(fmt), clientName, first.getReservationNumber()));
+            res.put("conflictingReservationId", first.getId());
+            return res;
+        }
+
+        res.put("available", true);
+        res.put("reason", "Véhicule parfaitement disponible sur cette période.");
+        return res;
     }
 }
